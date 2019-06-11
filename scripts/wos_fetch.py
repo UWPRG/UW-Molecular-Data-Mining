@@ -17,5 +17,5 @@ def wos_fetch(output_file, username, password):
         print(wos.utils.query(client, 'AU=Beckner Wesley'))
 
 
-__name__ == '__main__':
+if __name__ == '__main__':
     wos_fetch()
