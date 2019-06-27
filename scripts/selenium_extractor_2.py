@@ -11,7 +11,7 @@ from selenium.webdriver.common.keys import Keys
 
 pg_counter = 1
 
-def get_first_page(url, output):
+def get_first_page(url):
     # opens the chrome webdriver
     driver = webdriver.Chrome()
     # heads to chrome, goes to page
@@ -19,10 +19,6 @@ def get_first_page(url, output):
     # grabs all elements with an href
     elems = scrape(driver)
     clean_elems = clean(elems)
-    for item in clean_elems:
-        if type(url) is str:
-            output.write(url)
-            output.write('\n')
     return driver, clean_elems
 
 
@@ -50,14 +46,13 @@ def clean(raw_elems):
     return urls
 
 
-def n_pages(driver, max_iters, counter, pg_start, output, wait_time):
+def get_n_pages(driver, pages, counter, pg_start, wait_time):
     """
     This method navigates through a desired number of pages on google, scrapes each one
-    After scraping, the newly scraped htmls are written to the output file
     """
     pg_counter = pg_start
     urls = []
-    while counter <= max_iters:
+    while counter <= pages:
         # throttle so Google doesn't think we're robots
         time.sleep(wait_time)
         counter += 1
@@ -74,12 +69,7 @@ def n_pages(driver, max_iters, counter, pg_start, output, wait_time):
         driver.get(nxt_url)
         elems = scrape(driver)
         clean_elems = clean(elems)
-        urls.append(clean_elems)
-        # loops through cleaned url list, writes to output file
-        for url in clean_elems:
-            if type(url) is str:
-                output.write(url)
-                output.write('\n')
+        urls.extend(clean_elems)
         pg_counter += 1
 
     return urls
@@ -100,23 +90,26 @@ def scrape(driver):
 @click.option('-w', '--wait_time', 'wait_time', type=int, required=False,
             default=6, show_default=True,
             help='time in second between page fetches')
-@click.option('-m', '--max_iters', 'max_iters', type=int, required=False,
+@click.option('-p', '--max_pages', 'max_pages', type=int, required=False,
             default=10, show_default=True,
             help='maximum number of iterations (pages to fetch)')
-def selenium_extractor(output_file, first_url, wait_time, max_iters):
-    # NOTE, urls is constructed but nothing is done with it
-    with open(output_file, 'w') as f:
-        driver, urls = get_first_page(first_url, f)
-        # NOTE, subsequent calls to this, in a loop would increment ocunter and pg_start
-        urls.extend(
-                n_pages(driver, max_iters=10, counter=0, pg_start=1, 
-                        output=f, wait_time=wait_time)
-            )
-
-    print('collected %d total URLS' % (len(urls)))
-    print(urls)
-
+def selenium_extractor(output_file, first_url, wait_time, max_pages):
+    
+    driver, urls = get_first_page(first_url)
+    
+    # NOTE, subsequent calls to this, in a loop would increment ocunter and pg_start
+    urls.extend(
+            get_n_pages(driver, pages=max_pages - 1, counter=0,
+                    pg_start=1, wait_time=wait_time)
+        )
     driver.quit()
+
+    print('collected %d total URLS which will be saved to file %s' %
+            (len(urls), output_file))
+    with open(output_file, 'w') as f:
+        for url in urls:
+            f.write(url + '\n')
+
 
 
 if __name__ == '__main__':
