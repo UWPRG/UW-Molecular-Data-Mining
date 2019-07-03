@@ -1,5 +1,11 @@
 # BETO2020
 
+### July 3rd
+Meeting notes:
+- dropbox for database location (may or may not take format of sql database)
+- set meeting for **July 17 Hackathon** with Luscombe summer students (UnitTests, Travis CI, pypi, readthedocs/sphinx/ghpages/pep8)
+- July 5th Wes+David hacky hack establish how/what we are going to store (abstracts/text/figures/tables). So far David has been using beautiful soup. He's taken an algorithmic approach to parsing science direct (where the text is saved each time, etc.)
+
 ## Overview
 This repository describes how to identify organic chemical candidates that can function as flame retardants or corrosion inhibitors from published papers.
 ## Process
