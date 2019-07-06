@@ -10,23 +10,9 @@ import time
 This code is used to scrape ScienceDirect of publication urls and write them to
 a text file in the current directory for later use.
 
-Before running this code you must:
+To use this code, go to ScienceDirect.com and search for the topic of interest.
+Then, copy the URL and paste it into terminal when prompted for user input.
 
-(1) Go to sciencedirect.com and search for the publication keywords you're
-    interested in (i.e. 'organic flame retardant').
-
-(2) Once the page is loaded, there is a 'Refine By' section on the left where you
-    select the years you would like publications from.
-
-(3) In the same 'Refine By' section you must select 'Review articles' and
-    'Research articles'
-
-(4) *Important: Scroll to the bottom of the page as click the option to display
-    100 links at a time.
-
-An examplary link for 'corrosion inhibitor synthesis'is shown here:
-
-'https://www.sciencedirect.com/search?qs=corrosion%20inhibitor%20synthesis&show=100&sortBy=relevance&origin=home&zone=qSearch&years=2021%2C2020%2C2019%2C2018%2C2017%2C2016%2C2015%2C2014%2C2013%2C2012%2C2011%2C2010&articleTypes=REV%2CFLA'
 '''
 
 def scrape_page(driver):
@@ -53,33 +39,36 @@ def clean(elems):
             urls.append(url)
     return urls
 
-def get_pages(first_url):
+def build_annual_urls(first_url,year):
     '''
     This method takes the first SD url and creates a list of
     urls which lead to the following pages on SD which will be
-    scraped.
+    scraped. The page list is for a given year.
     '''
 
     page_urls = []
-    for i in range(60):
-        urli = first_url + '&offset=' + str(i) + '00'
+    for i in range(20):
+        url_100 = first_url.replace('&show=25','&show=100')
+        urli = url_100 + '&offset=' + str(i) + '00' + '&articleTypes=REV%2CFLA' + '&years=' + str(year)
         page_urls.append(urli)
 
     return page_urls
 
-def scrape_all(first_url,driver):
+def scrape_all(first_url,driver,year):
     '''
     This method takes the first ScienceDirect url and navigates
     through all 60 pages of listed publications, scraping each url
-    on each page. Returns a list of the urls.
+    on each page. Returns a list of the urls. Scrapes all urls for a given year.
     '''
-    page_list = get_pages(first_url)
+    page_list = build_annual_urls(first_url,year)
     urls = []
     for page in page_list:
         driver.get(page)
-        time.sleep(1.5) #must sleep to allow page to load
+        time.sleep(1) #must sleep to allow page to load
         elems = scrape_page(driver)
         links = clean(elems)
+        if len(links) < 2:
+            break
         for link in links:
             urls.append(link)
 
@@ -111,14 +100,25 @@ def write_urls(urls,filename):
         file.write('\n')
 
 
+
 driver = webdriver.Chrome()
 prefix = 'https://www-sciencedirect-com.offcampus.lib.washington.edu/science/article/pii/'
 
 first_url = input("Copy/Paste the ScienceDirect URL here: ")
+print('\n')
 filename = input("Input filename with .txt extension you wish to store urls in: ")
 
-scraped_urls = scrape_all(first_url,driver)
-proxy_urls = proxify(scraped_urls,prefix)
-write_urls(proxy_urls,filename)
+master_list = []
+years = np.arange(1990,2020)
+
+for year in years:
+    year = str(year)
+    scraped_urls = scrape_all(first_url,driver,year)
+    proxy_urls = proxify(scraped_urls,prefix)
+    for link in proxy_urls:
+        master_list.append(link)
+    print('Number of URLs collected = ',len(master_list))
+
+write_urls(master_list,filename)
 
 driver.quit()
