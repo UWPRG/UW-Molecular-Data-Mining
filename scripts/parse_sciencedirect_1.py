@@ -7,11 +7,11 @@ from bs4 import BeautifulSoup
 import time
 
 def extract(url,driver,wait_time):
-    '''
+    """
     This method takes a url, webdriver, and a desired wait time for loading
     pages. It saves html source code from site as BeautifulSoup object, then
 
-    '''
+    """
 
 
     driver.get(url)
