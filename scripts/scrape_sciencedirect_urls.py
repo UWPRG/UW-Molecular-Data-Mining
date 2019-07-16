@@ -86,17 +86,18 @@ def proxify(scraped_urls,prefix):
     for url in scraped_urls:
         sd_id = url[-17:]
         newlink = prefix + sd_id
-        proxy_urls.append(newlink)
+        if sd_id.startswith('S'):
+            proxy_urls.append(newlink)
 
     return proxy_urls
 
-def write_urls(urls,filename):
+def write_urls(urls,file,year):
     """
     This method takes a list of urls and writes them to a desired text file.
     """
-    file = open(filename,'w')
     for link in urls:
-        file.write(link)
+        line = str(year) + ',' + link
+        file.write(line)
         file.write('\n')
 
 
@@ -109,7 +110,8 @@ print('\n')
 filename = input("Input filename with .txt extension you wish to store urls in: ")
 
 master_list = []
-years = np.arange(1990,2020)
+years = np.arange(1990,2021)
+file = open(filename,'w')
 
 for year in years:
     year = str(year)
@@ -118,7 +120,7 @@ for year in years:
     for link in proxy_urls:
         master_list.append(link)
     print('Number of URLs collected = ',len(master_list))
-
-write_urls(master_list,filename)
+    print('Year is: ',year)
+    write_urls(proxy_urls,file,year)
 
 driver.quit()
