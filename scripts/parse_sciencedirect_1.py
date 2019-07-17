@@ -8,9 +8,25 @@ import time
 
 def extract(url,driver,wait_time):
     """
-    This method takes a url, webdriver, and a desired wait time for loading
-    pages. It saves html source code from site as BeautifulSoup object, then
+    This method saves html source code from site as a BeautifulSoup object, then
+    parses through the source code to extract information from the html.
 
+    Parameters
+    ----------
+    url (str) : The url Selenium will navigate to.
+
+    driver (Selenium webdriver object) : Instance of webdriver e.g.
+        webdriver.Chrome()
+
+    wait_time (int or float) : The desired wait time between pages, usually
+        don't go below ~1-1.5 seconds to ensure page can load
+
+    Returns
+    -------
+    Can return Title, Abstract, Body, References, DOI
+
+    If one of the above texts is unnavailable within the souce code, return
+    type for that text is changed to None
     """
 
 
@@ -48,6 +64,27 @@ def extract(url,driver,wait_time):
     return body
 
 def parse_all(df,max_iters,driver,file):
+    """
+    This method loops through the list of URLs in a dataframe to extract all
+    import aspects of a paper (located at each url).
+
+    Parameters
+    ----------
+    df (Pandas dataframe) : The dataframe containing all URLs to be parsed.
+        The urls must be located in the first column of the dataframe.
+
+    max_iters (int) : The number of URLs in the data frame you would like to
+        parse through
+
+    driver (Selenium webdriver object) : e.g. webdriver.Chrome()
+
+    file (file object) : The file where text from the paper is to be stored
+
+    Returns
+    -------
+    No returns
+
+    """
     title1 = extract(df.iloc[1,0], driver,10)
     file.write(title1)
     file.write('\n')
