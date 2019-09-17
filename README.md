@@ -1,5 +1,28 @@
 # BETO2020
 
+### September 16 Meeting (Taking stock, regroup, what's everyone up to?)
+Summary of this meeting is that Wes T + Alex are building a word2vec classifier based on a cumulative cosine distance of a paper to keywords/phrases like 'corrosion inhibition' or 'flame retardant polymer.' Dave J has established one resource for full text publications that can yield at least 10^4 papers on a given topic. Also building TF-IDF classifier. Jon will investigate methods for large JSON datastructures to start storing our data in an organized fashion. We agreed we need the ability to create a living breathing database offline that is easily added to and accessed. 
+
+#### Where is everyone at?
+
+##### Alex/ West T
+Working on a text classifier using Word2Vec. Strategy is to train Word2Vec on papers that are mannually graded as really good (score of 2) so it can learn the context of relevant words. Then cumulative cosine similarity scores will be given to papers, and a threshold will be established to accept/reject if a paper is relevant. 
+
+##### Dave J
+Working on a text classifier using TF-IDF and support vector machines. Strategy is to vectorize documents using the TF-IDF formula, then create classification boundaries with support vector machines. Also might investigate n-gram optimization (i.e. is Tf-IDF most successful with unigrams, bigrams, trigrams, etc...) 
+
+#### Next steps for everyone
+
+##### Dave J
+Keep figuring out how to gain access to large volumes of full text publications via APIs. Also keep building TF-IDF classifier. Maybe test out on some real papers. 
+
+##### Jon et. al.
+Database/JSON formatting investigation. How can we format our papers/metadata? 
+
+##### Wes T et. al.
+Keep building the Word2Vec classifier
+
+
 ### July 31st (List of important data/scripts and their locations)
 
 #### Important Scripts and iPython Notebooks:
