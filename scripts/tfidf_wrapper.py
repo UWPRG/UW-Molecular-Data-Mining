@@ -59,7 +59,7 @@ class tfidf_model:
         self.matrix = self.vectorizer.fit_transform(self.training_corpus)
         self.vocab = self.vectorizer.get_feature_names()
         self.array = self.matrix.toarray()
-        self.classifier =  SGDClassifier(max_iter = 1000,tol=1e-3).fit(self.matrix, self.training_targets)
+        self.classifier =  SGDClassifier(max_iter = 1000,tol=1e-3,verbose=1).fit(self.matrix, self.training_targets)
 
     def predict(self,test_corpus,test_targets = None):
 
@@ -87,5 +87,3 @@ class tfidf_model:
             self.accuracy = None
 
         return self.predictions
-
-    
