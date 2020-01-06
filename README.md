@@ -1,4 +1,9 @@
-# BETO2020
+# Running updates from UW Chemical NLP Mining team
+
+### January 6, 2020. Two new notebooks for demonstration of text data pipeline.
+1) '/ipynb/CDE-PCP-W2V.ipynb' - This notebook contains a demonstration of training a model to learn real chemical knowledge from text data. Additionally, the ability to extract structures from text and rank them based on extracted knowledge is shown. 
+
+2) '/ipynb/tfidf_classification.ipynb' - This notebook contains demonstration of filtering/ranking the "relevance" of full-text publications. Filtering is done via support vector machines learning from TF-IDF vectorized text data. 
 
 ### September 16 Meeting (Taking stock, regroup, what's everyone up to?)
 Summary of this meeting is that Wes T + Alex are building a word2vec classifier based on a cumulative cosine distance of a paper to keywords/phrases like 'corrosion inhibition' or 'flame retardant polymer.' Dave J has established one resource for full text publications that can yield at least 10^4 papers on a given topic. Also building TF-IDF classifier. Jon will investigate methods for large JSON datastructures to start storing our data in an organized fashion. We agreed we need the ability to create a living breathing database offline that is easily added to and accessed. 
