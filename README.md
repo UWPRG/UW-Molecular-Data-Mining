@@ -37,14 +37,14 @@ Keep building the Word2Vec classifier
 
 3. 'tfidf_wrapper.py' - BETO2020/scripts/ - This script can be used to train a document classifier. It is written as a class and its use will require looking at the documentation within. Classification is a two step process (1) vectorization of the dodument into TF-IDF vectors (2) Classification via support vector machines. 
 
-4. 'SD_paper_cleaner.ipynb' - BETO2020/ipynb/ - This notebook is able to clean the full text output from the Science Direct API. Removes unusable text from the front and back of the publication, leaving only the body of text in the publication. 
+4. 'SD_paper_cleaner.ipynb' - /ipynb/ - This notebook is able to clean the full text output from the Science Direct API. Removes unusable text from the front and back of the publication, leaving only the body of text in the publication. 
 
 #### Important Data:
-1. 'keyword_organic_corrosion_inhibitor.txt' - Located in 'BETO2020/data/ScienceDirect URLS/' and the ChemE NLP team drive. The current master list of corrosion inhibitor publication URLs from Science Direct. This is the file that was used to create the raw corpus of corrosion inhibitor papers. 
+1. 'keyword_organic_corrosion_inhibitor.txt' - Located in '/data/ScienceDirect URLS/' and the ChemE NLP team drive. The current master list of corrosion inhibitor publication URLs from Science Direct. This is the file that was used to create the raw corpus of corrosion inhibitor papers. 
 
-2. 'keyword_organic_flame_retardant.txt' - Located in 'BETO2020/data/ScienceDirect URLS/'. The current master list of flame retardant publication URLs from Science Direct. this is the file that was used to create the raw corpus of flame retardant papers.
+2. 'keyword_organic_flame_retardant.txt' - Located in '/data/ScienceDirect URLS/'. The current master list of flame retardant publication URLs from Science Direct. this is the file that was used to create the raw corpus of flame retardant papers.
 
-3. 'corrinhib_success.txt' - Located in 'BETO2020/data/ScienceDirect URLS/' and the ChemE NLP team drive. This is the same list of URLs as above, except the rightmost column has a binary indicator of whether or not the API was successful at retrieving the full text. This can be used to link the papers in the raw corpus of corrosion inhibitor publications to their URLs, and PII numbers. There is a header. 
+3. 'corrinhib_success.txt' - Located in '/data/ScienceDirect URLS/' and the ChemE NLP team drive. This is the same list of URLs as above, except the rightmost column has a binary indicator of whether or not the API was successful at retrieving the full text. This can be used to link the papers in the raw corpus of corrosion inhibitor publications to their URLs, and PII numbers. There is a header. 
 
 4. 'corrosion_inhibitor_texts.txt' - Located in the ChemE NLP team drive. The first raw corpus of corrosion inhibitor texts. Texts are separated by a '\n' delimiter, and can be loaded into a dataframe. There is no header. 
 
