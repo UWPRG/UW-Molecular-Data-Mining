@@ -1,4 +1,4 @@
-# Running updates from UW Chemical NLP Mining team
+# Running updates from UW NLP Molecular Mining team
 
 ### January 6, 2020. Two new notebooks for demonstration of text data pipeline.
 #### 1) '/ipynb/CDE-PCP-W2V.ipynb' 
