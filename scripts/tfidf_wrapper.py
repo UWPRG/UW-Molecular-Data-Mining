@@ -13,7 +13,7 @@ class tfidf_model:
     ----------
     training_corpus (list, required): The list of documents that will train the tfidf vectorizer.
 
-    training_targets (list, required): Integer values that respectively correspond to the categories
+    training_targets (list, optional): Integer values that respectively correspond to the categories
         of the documents in training corpus.
 
 
@@ -31,37 +31,46 @@ class tfidf_model:
     predictions: The predictions made by the classifier in the most recent call.
 
     accuracy: The accuracy of the current n-gram tf-idf/SVM model.
+    
+    matrix: the tfidf_matrix object used for training
 
 
 
     """
-    def __init__(self,training_corpus,training_targets):
+    def __init__(self,training_corpus,training_targets=None):
 
         self.training_corpus = training_corpus
         self.training_targets = training_targets
 
-
-    def train(self,ngrams=1):
+    def tfidf_matrix(self,ngrams=1):
+        """
+        This method takes the training corpus (this could be any corpus, even if you aren't doing training)
+        and simply creates a TF-IDF matrix for the corpus. The corresponding vocabulary is also created.
+        
+        Parameters
+        ----------
+        ngrams (int, optional): The size of n-gram tf-idf analysis is done by. 1 = unigrams, 2 = bigrams,
+            etc... Default value is 1.
+        """
+        
+        self.vectorizer = TfidfVectorizer(ngram_range=(ngrams,ngrams))
+        self.matrix = self.vectorizer.fit_transform(self.training_corpus)
+        self.vocab = self.vectorizer.get_feature_names()
+        self.array = self.matrix.toarray()
+        
+        
+    
+    def tfidf_train(self,ngrams=1):
         """
         This method trains the TF-IDV vectorizer on the training corpus. Creates a TF-IDF matrix,
         master vocabulary, and trains support vector machines to categorize documents based on the
         training target array.
 
-        Parameters
-        ----------
-        ngrams (int, optional): The size of n-gram tf-idf analysis is done by. 1 = unigrams, 2 = bigrams,
-            etc... Default value is 1.
-
         """
-
-
-        self.vectorizer = TfidfVectorizer(ngram_range=(ngrams,ngrams))
-        self.matrix = self.vectorizer.fit_transform(self.training_corpus)
-        self.vocab = self.vectorizer.get_feature_names()
-        self.array = self.matrix.toarray()
+        
         self.classifier =  SGDClassifier(max_iter = 1000,tol=1e-3,verbose=1).fit(self.matrix, self.training_targets)
 
-    def predict(self,test_corpus,test_targets = None):
+    def tfidf_predict(self,test_corpus,test_targets = None):
 
         """
         This method makes category predictions for a test_corpus. It returns an array of prediction values
