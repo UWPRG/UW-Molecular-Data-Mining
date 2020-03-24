@@ -201,6 +201,9 @@ def make_ner_sheet(journal_directory, retrieval_type='abstract', years='all', sc
                 else:
                     text = year_dict[pub_idx]['fulltext']
 
+                if text == None: # some abstracts and fulltexts just aren't there
+                    continue
+                
                 for sentence in sent_tokenize(text):
                     for word in word_tokenize(sentence):
                         pub_tokens.append(word)
@@ -273,13 +276,14 @@ def find_longest_paper(year_dict, text_type='description'):
     for paper_idx in year_dict:
         paper_wds = 0
         text = year_dict[paper_idx][text_type]
-        for sentence in sent_tokenize(text):
-            for word in word_tokenize(sentence):
-                paper_wds += 1
+        if text != None
+            for sentence in sent_tokenize(text):
+                for word in word_tokenize(sentence):
+                    paper_wds += 1
 
-        if paper_wds > longest:
-            longest = paper_wds
-        else:
+            if paper_wds > longest:
+                longest = paper_wds
+            else:
             pass # dave beck taught me this move
 
     return longest
