@@ -197,7 +197,7 @@ def make_ner_sheet(journal_directory, retrieval_type='abstract', years='all', sc
 
                 # grab the relevant text corresponding to the random index
                 if retrieval_type == 'abstract':
-                    text = year_dict[pub_idx]['abstract']
+                    text = year_dict[pub_idx]['description'] # need to change this to 'abstract' in pyblio
                 else:
                     text = year_dict[pub_idx]['fulltext']
 
@@ -256,7 +256,7 @@ def make_ner_sheet(journal_directory, retrieval_type='abstract', years='all', sc
 
 
 
-def find_longest_paper(year_dict, text_type='abstract'):
+def find_longest_paper(year_dict, text_type='description'):
     """
     This function finds the longest paper in a year_dict, in terms of how many
     tokens are in the paper.
