@@ -245,8 +245,8 @@ def make_ner_sheet(journal_directory, retrieval_type='description', years='all',
             df = pd.DataFrame(np.array([name, data, besio, entity]).transpose(), columns=columns)
 
             # write the damn thing to excel in the propper column
-            with pd.ExcelWriter('carbon_ner_labels.xlsx') as writer:
-                df.to_excel(writer, sheet_name=f'Sheet{sheet_number}', startcol = 6 * pubs_in_sheet)
+            filename = 'carbon_ner_labels.xlsx'
+            append_df_to_excel(filename, sheet_name=f'Sheet{sheet_number}', startcol = 6 * pubs_in_sheet)
 
             pubs_in_sheet += 1
             pubs_in_excel += 1
