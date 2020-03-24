@@ -122,7 +122,7 @@ class Loader():
                             yield(words)
 
 
-def make_ner_sheet(journal_directory, retrieval_type='abstract', years='all', scramble=True,
+def make_ner_sheet(journal_directory, retrieval_type='description', years='all', scramble=True,
                    pick_random=True, num_papers=1000, seed=42, pubs_per_sheet=100):
     """
     This function prepares text data to be labeled for NER training in excel spreadsheet.
@@ -162,12 +162,12 @@ def make_ner_sheet(journal_directory, retrieval_type='abstract', years='all', sc
     # calculate the publications per year we need
     if years != 'all':
         num_years = len(years)
-        pubs_per_year = num_papers / num_years
+        pubs_per_year = int(round(num_papers / num_years)) # round to nearest whole
     else:
         # the first layer of dictionaries in journal_dict corresponds to all the
         # years, so the number of keys will tell us how many pubs for each year
         num_years = len(journal_dict.keys())
-        pubs_per_year = num_papers / num_years
+        pubs_per_year = int(round(num_papers / num_years))
 
     if years == 'all':
         year_list = journal_dict.keys()
@@ -184,6 +184,8 @@ def make_ner_sheet(journal_directory, retrieval_type='abstract', years='all', sc
         longest_paper = find_longest_paper(year_dict, text_type = retrieval_type)
 
         random.seed(seed)
+        print(len(year_dict))
+        print(pubs_per_year)
         pub_idxs = random.sample(range(len(year_dict)), pubs_per_year)
 
         while pubs_from_year < pubs_per_year:
@@ -196,16 +198,16 @@ def make_ner_sheet(journal_directory, retrieval_type='abstract', years='all', sc
                 pub_idx = str(pub_idxs.pop()) # have to access the dictionary with strings. Yes, I suck
 
                 # grab the relevant text corresponding to the random index
-                if retrieval_type == 'abstract':
+                if retrieval_type == 'description':
                     text = year_dict[pub_idx]['description'] # need to change this to 'abstract' in pyblio
                 else:
                     text = year_dict[pub_idx]['fulltext']
-
+                
                 if text == None: # some abstracts and fulltexts just aren't there
                     continue
-                
+                text = clean_paper(text)
                 for sentence in sent_tokenize(text):
-                    for word in word_tokenize(sentence):
+                    for word in sentence.split():
                         pub_tokens.append(word)
 
                 pubs.append(pub_tokens)
@@ -215,8 +217,8 @@ def make_ner_sheet(journal_directory, retrieval_type='abstract', years='all', sc
             except:
                 break
 
-    print('This is pub_infos[0]', pub_infos[0])
-    print('This is pubs[0] ', pubs[0])
+    print('This is pub_infos[1]', pub_infos[1])
+    print('This is pubs[1] ', pubs[1])
     print('This is len(pubs) ', len(pubs))
     print('This is len(pub_infos) ', len(pub_infos))
                 ###########################################
@@ -276,7 +278,7 @@ def find_longest_paper(year_dict, text_type='description'):
     for paper_idx in year_dict:
         paper_wds = 0
         text = year_dict[paper_idx][text_type]
-        if text != None
+        if text != None:
             for sentence in sent_tokenize(text):
                 for word in word_tokenize(sentence):
                     paper_wds += 1
@@ -284,7 +286,7 @@ def find_longest_paper(year_dict, text_type='description'):
             if paper_wds > longest:
                 longest = paper_wds
             else:
-            pass # dave beck taught me this move
+                pass # dave beck taught me this move
 
     return longest
 
