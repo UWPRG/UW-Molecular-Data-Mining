@@ -200,7 +200,7 @@ def make_ner_sheet(journal_directory, retrieval_type='description', years='all',
                     text = year_dict[pub_idx]['description'] # need to change this to 'abstract' in pyblio
                 else:
                     text = year_dict[pub_idx]['fulltext']
-                
+
                 if text == None: # some abstracts and fulltexts just aren't there
                     continue
                 text = clean_paper(text)
@@ -215,76 +215,67 @@ def make_ner_sheet(journal_directory, retrieval_type='description', years='all',
             except:
                 break
 
-    print('This is pub_infos[1]', pub_infos[1])
-    print('This is pubs[1] ', pubs[1])
-    print('This is len(pubs) ', len(pubs))
-    print('This is len(pub_infos) ', len(pub_infos))
-                ###########################################
+    longest = find_longest_paper(pubs)
 
-                # # make sure pub_tokens is as long as the longest paper
-                # while len(pub_tokens) < longest_paper:
-                #     pub_tokens.append(np.nan)
-                #
-                # pubdict[year][pub_idx] =
-                #
-                #
-                # # here's the stuff we're actually going to put in a dataframe
-                # pub_tokens = np.array(pub_tokens)
-                # doi = year_dict[pub_idx]['doi']
-                # name   = np.array(['' for range(len(pub_tokens))])
-                # besio  = np.array(['' for range(len(pub_tokens))])
-                # entity = np.array(['' for range(len(pub_tokens))])
-                #
-                # data = np.array([name, pub_tokens, besio, entity]).transpose()
-                # columns = ['name', 'tokens', 'BESIO', 'entity']
-                # pubs_df = pd.DataFrame(data, columns=columns)
-                #
-                # if pubs_on_sheet < pubs_per_sheet:
-                #     with pd.ExcelWriter('label_carbon.xlsx') as writer:
-                #         df.to_excel(writer, sheet_name = f'Sheet{}', startcol = 6*pubs_on_sheet)
-                #         pubs_on_sheet += 1
-                #
-                # else: # pubs_on_sheet was >= pubs_per_sheet
-                #
-                #
-                #
-                #
-                #
-                #
-                #
-                #
-                # except: # there weren't enough publications in this year, move on
-                #     break
+    pubs_in_excel = 0
+    sheet_number = 0
+    pub_counter = 0
 
+
+    while pubs_in_excel < len(pubs):
+
+        pubs_in_sheet = 0
+        while pubs_in_sheet < pubs_per_sheet:
+
+            # make sure everything is as long as the longest paper
+            data = pubs[pub_counter]
+            while len(data) < longest:
+                data.append('')
+            data = np.array(data)
+
+            # create dataframe
+            name   = ['' for x in range(len(data))]
+            besio  = np.array(['' for x in range(len(data))])
+            entity = np.array(['' for x in range(len(data))])
+
+            name[1] = pub_infos[pub_counter][2] # put the doi in second entry
+            name = np.array(name) # now turn it into np array
+
+            columns = ['name', 'tokens', 'BESIO', 'entity (MOL/PRO)']
+
+            df = pd.DataFrame(np.array([name, data, besio, entity]).transpose(), columns=columns)
+
+            # write the damn thing to excel in the propper column
+            with pd.ExcelWriter('carbon_ner_labels.xlsx') as writer:
+                df.to_excel(writer, sheet_name=f'Sheet{sheet_number}', startcol = 6 * pubs_in_sheet)
+
+            pubs_in_sheet += 1
+            pubs_in_excel += 1
+            pub_counter += 1
+
+        sheet_number += 1
 
 
 
-def find_longest_paper(year_dict, text_type='description'):
+
+
+
+
+def find_longest_paper(pubs):
     """
     This function finds the longest paper in a year_dict, in terms of how many
     tokens are in the paper.
 
     Parameters:
-        year_dict (dict, required): The year_dict to be searched
-
-        text_type (str, optional): 'abstract' or 'fulltext'
+        pubs (list-like, required): The year_dict to be searched
 
     Returns:
         longest (int): The length of the longest paper in the year dict
     """
     longest = 0
-    for paper_idx in year_dict:
-        paper_wds = 0
-        text = year_dict[paper_idx][text_type]
-        if text != None:
-            for sentence in sent_tokenize(text):
-                for word in word_tokenize(sentence):
-                    paper_wds += 1
-
-            if paper_wds > longest:
-                longest = paper_wds
-            else:
-                pass # dave beck taught me this move
+    for paper in pubs:
+        if len(paper) > longest:
+            longest = len(paper)
 
     return longest
 
