@@ -222,12 +222,12 @@ def make_ner_sheet(journal_directory, retrieval_type='description', years='all',
     pub_counter = 0
 
 
-    while pubs_in_excel < len(pubs):
+    while pubs_in_excel < len(pubs) - 1: 
 
         pubs_in_sheet = 0
         while pubs_in_sheet < pubs_per_sheet:
 
-            # make sure everything is as long as the longest paper
+
             data = pubs[pub_counter]
             while len(data) < longest:
                 data.append('')
