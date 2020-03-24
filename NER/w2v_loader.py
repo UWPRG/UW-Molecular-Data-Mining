@@ -184,8 +184,6 @@ def make_ner_sheet(journal_directory, retrieval_type='description', years='all',
         longest_paper = find_longest_paper(year_dict, text_type = retrieval_type)
 
         random.seed(seed)
-        print(len(year_dict))
-        print(pubs_per_year)
         pub_idxs = random.sample(range(len(year_dict)), pubs_per_year)
 
         while pubs_from_year < pubs_per_year:
@@ -298,7 +296,7 @@ def label_main():
     This is the main method for the paper label exection.
     """
     carbon_path = '/gscratch/pfaendtner/dacj/nlp/fulltext_pOmOmOo/Carbon'
-    make_ner_sheet(carbon_path, num_papers = 50)
+    make_ner_sheet(carbon_path, num_papers = 500)
 
 label_main()
 
