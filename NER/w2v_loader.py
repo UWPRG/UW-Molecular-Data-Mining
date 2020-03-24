@@ -181,7 +181,7 @@ def make_ner_sheet(journal_directory, retrieval_type='abstract', years='all', sc
 
         year_dict = journal_dict[year]
         pubs_from_year = 0
-        longest_paper = find_longest_paper(year_dict, type = retrieval_type)
+        longest_paper = find_longest_paper(year_dict, text_type = retrieval_type)
 
         random.seed(seed)
         pub_idxs = random.sample(range(len(year_dict)), pubs_per_year)
@@ -208,6 +208,9 @@ def make_ner_sheet(journal_directory, retrieval_type='abstract', years='all', sc
                 pubs.append(pub_tokens)
                 info_tup = (year, pub_idx, year_dict[pub_idx]['doi'], year_dict[pub_idx]['pii'])
                 pub_infos.append(info_tup)
+
+            except:
+                break
 
     print('This is pub_infos[0]', pub_infos[0])
     print('This is pubs[0] ', pubs[0])
@@ -291,16 +294,18 @@ def label_main():
     carbon_path = '/gscratch/pfaendtner/dacj/nlp/fulltext_pOmOmOo/Carbon'
     make_ner_sheet(carbon_path, num_papers = 50)
 
+label_main()
 
 
 
-def w2v_main():
-    """
-    This is the main method to be executed
-    """
-    generator = Loader('/gscratch/pfaendtner/dacj/nlp/fulltext_pOmOmOo/Carbon')
-    model = Word2Vec(generator, min_count=10, workers=1, size=200)
-    os.chdir('/gscratch/pfaendtner/dacj/nlp')
-    model.save('carbon.model')
 
-main()
+# def w2v_main():
+#     """
+#     This is the main method to be executed
+#     """
+#     generator = Loader('/gscratch/pfaendtner/dacj/nlp/fulltext_pOmOmOo/Carbon')
+#     model = Word2Vec(generator, min_count=10, workers=1, size=200)
+#     os.chdir('/gscratch/pfaendtner/dacj/nlp')
+#     model.save('carbon.model')
+#
+# main()
