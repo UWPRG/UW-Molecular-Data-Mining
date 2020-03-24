@@ -213,6 +213,12 @@ def make_ner_sheet(journal_directory, retrieval_type='description', years='all',
 
             except:
                 break
+    
+    np.random.seed(42)
+    np.random.shuffle(pubs)
+
+    np.random.seed(42)
+    np.random.shuffle(pub_infos)
 
     longest = find_longest_paper(pubs)
 
@@ -236,8 +242,11 @@ def make_ner_sheet(journal_directory, retrieval_type='description', years='all',
             name   = ['' for x in range(len(data))]
             besio  = np.array(['' for x in range(len(data))])
             entity = np.array(['' for x in range(len(data))])
+            
+            name[1] = pub_infos[pub_counter][0] # put the year in the second entry
+            name[2] = pub_infos[pub_counter][1] # put the pub index within the year as third entry
+            name[3] = pub_infos[pub_counter][2] # put the pub doie as fourth entry
 
-            name[1] = pub_infos[pub_counter][2] # put the doi in second entry
             name = np.array(name) # now turn it into np array
 
             columns = ['name', 'tokens', 'BESIO', 'entity (MOL/PRO)']
@@ -246,7 +255,7 @@ def make_ner_sheet(journal_directory, retrieval_type='description', years='all',
 
             # write the damn thing to excel in the propper column
             filename = 'carbon_ner_labels.xlsx'
-            append_df_to_excel(filename, sheet_name=f'Sheet{sheet_number}', startcol = 6 * pubs_in_sheet)
+            append_df_to_excel(filename, df, sheet_name=f'Sheet{sheet_number}', startcol = 6 * pubs_in_sheet)
 
             pubs_in_sheet += 1
             pubs_in_excel += 1
@@ -286,7 +295,7 @@ def append_df_to_excel(filename, df, sheet_name='Sheet1', startrow=0, startcol=N
     from openpyxl import load_workbook
 
     import pandas as pd
-
+    print('On dataframe ', startcol/6)
     # ignore [engine] parameter if it was passed
     if 'engine' in to_excel_kwargs:
         to_excel_kwargs.pop('engine')
@@ -361,7 +370,7 @@ def label_main():
     This is the main method for the paper label exection.
     """
     carbon_path = '/gscratch/pfaendtner/dacj/nlp/fulltext_pOmOmOo/Carbon'
-    make_ner_sheet(carbon_path, num_papers = 500)
+    make_ner_sheet(carbon_path, num_papers = 1000)
 
 label_main()
 
