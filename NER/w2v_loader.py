@@ -181,7 +181,6 @@ def make_ner_sheet(journal_directory, retrieval_type='description', years='all',
 
         year_dict = journal_dict[year]
         pubs_from_year = 0
-        longest_paper = find_longest_paper(year_dict, text_type = retrieval_type)
 
         random.seed(seed)
         pub_idxs = random.sample(range(len(year_dict)), pubs_per_year)
@@ -222,7 +221,7 @@ def make_ner_sheet(journal_directory, retrieval_type='description', years='all',
     pub_counter = 0
 
 
-    while pubs_in_excel < len(pubs) - 1: 
+    while pubs_in_excel < len(pubs) - 1:
 
         pubs_in_sheet = 0
         while pubs_in_sheet < pubs_per_sheet:
