@@ -126,6 +126,8 @@ class SingleLoader():
                         else: # it was 'abstract', this may be dangerous logic, fix soon
                             text = paper_dict['description']
 
+                        if text == None: # some publications don't have abstracts
+                            continue
                         text = clean_paper(text)
                         paper_counter += 1
                         print('Papers is at ',paper_counter)
@@ -160,7 +162,8 @@ class MultiLoader():
         for journal_directory in self.journal_directory_list:
             text_loader = SingleLoader(journal_directory, years = self.years,
                                        retrieval_type = self.retrieval_type)
-            text_loader.__iter__()
+            for item in text_loader.__iter__():
+                yield item
 
 ### DACB, here is the new bit I'm unsure will work
 def w2v_main():
