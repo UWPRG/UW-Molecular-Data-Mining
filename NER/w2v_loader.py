@@ -174,7 +174,7 @@ def w2v_main():
     jlist = [corpus_path + j_carbon, corpus_path + j_organometallic, corpus_path + j_inorg_biochem]
 
     # creating the multiloader iterator object
-    multi_j_loader = MultiLoader(j_list, years='all', retrieval_type='abstract')
+    multi_j_loader = MultiLoader(jlist, years='all', retrieval_type='abstract')
 
     # calling Word2Vec in the same manner I did with a
     model = Word2Vec(multi_j_loader, min_count=10, workers=1, size=200)
