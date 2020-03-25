@@ -155,7 +155,7 @@ class MultiLoader():
     def __iter__(self):
         """
         This method iterates through every sentence of all journals included in the
-        journal list. Grabs either abstracts or fulltexts according to retrieval_type. 
+        journal list. Grabs either abstracts or fulltexts according to retrieval_type.
         """
         for journal_directory in self.journal_directory_list:
             text_loader = SingleLoader(journal_directory, years = self.years,
@@ -174,7 +174,7 @@ def w2v_main():
     jlist = [corpus_path + j_carbon, corpus_path + j_organometallic, corpus_path + j_inorg_biochem]
 
     # creating the multiloader iterator object
-    multi_j_loader = MultiLoader(multi_j_loader, years='all', retrieval_type='abstract')
+    multi_j_loader = MultiLoader(j_list, years='all', retrieval_type='abstract')
 
     # calling Word2Vec in the same manner I did with a
     model = Word2Vec(multi_j_loader, min_count=10, workers=1, size=200)
