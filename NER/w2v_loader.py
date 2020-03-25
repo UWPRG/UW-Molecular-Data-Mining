@@ -14,7 +14,7 @@ This script is for training word2vec on a corpus of text collected by the elsapy
     the __iter__ function. Each sentence is a sequence of tokens split by whitespace.
 
     Question is: Does my use of text_loader.__iter__() make sense on line 163, will
-        MultiLoader() generate sentences just as SingleLoader() did, just from more journals. 
+        MultiLoader() generate sentences just as SingleLoader() did, just from more journals.
 """
 import numpy as np
 import pandas as pd
@@ -137,7 +137,7 @@ class SingleLoader():
 class MultiLoader():
     """
     This class creates an object able to iterate through multiple journal-dictionaries
-    worth of abstracts/fulltexts. Primarily used for building a model vocab.
+    worth of abstracts/fulltexts.
     """
 
     def __init__(self, journal_directory_list, years='all', retrieval_type='fulltext'):
@@ -155,7 +155,7 @@ class MultiLoader():
     def __iter__(self):
         """
         This method iterates through every sentence of all journals included in the
-        journal list from type 'retrieval_type'
+        journal list. Grabs either abstracts or fulltexts according to retrieval_type. 
         """
         for journal_directory in self.journal_directory_list:
             text_loader = SingleLoader(journal_directory, years = self.years,
