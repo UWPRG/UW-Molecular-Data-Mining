@@ -1,6 +1,21 @@
 """
 This script is for training word2vec on a corpus of text collected by the elsapy/pyblio modules
 """
+"""
+@DACB: All functions before SingleLoader class are helper functions for SingleLoader().
+    I have successfully used SingleLoader() as a generator for creating word embeddings
+    with word2vec. That successful run was done with lines 188-197.
+
+    The goal now is to create MultiLoader(), which, from the perspective of Word2Vec,
+    needs to have the exact same functionality as SingleLoader(), except sourcing multiple
+    journals instead of just one.
+
+    The important functionality we want to keep is to generate a sequence of sentences via
+    the __iter__ function. Each sentence is a sequence of tokens split by whitespace.
+
+    Question is: Does my use of text_loader.__iter__() make sense on line 163, will
+        MultiLoader() generate sentences just as SingleLoader() did, just from more journals. 
+"""
 import numpy as np
 import pandas as pd
 import gensim
@@ -60,18 +75,17 @@ def clean_paper(paper):
     return paper
 
 
-class Loader():
+class SingleLoader():
     """
     This class creates an iterator that can yield sentences from a given journal
     into gensim's Word2Vec.
     """
 
-    def __init__(self, journal_directory, years='all', retrieval_type='fulltext', mode='w2v'):
+    def __init__(self, journal_directory, years='all', retrieval_type='fulltext'):
         """
         This method creates an object, ready to iter through the tokens in a
         journal dictionary's 'fulltext' entry, or 'abstract' entry. This class
-        can be used as a sentence generator to train word2vec, or to produce
-        training data for labeling.
+        can be used as a sentence generator to train word2vec.
 
         Parameters:
             journal_directory (str, required): The absolute path to the journal
@@ -109,26 +123,75 @@ class Loader():
 
                         if self.retrieval_type == 'fulltext':
                             text = paper_dict['fulltext']
-                        else: # it was 'abstract'
-                            text = paper_dict['abstract']
+                        else: # it was 'abstract', this may be dangerous logic, fix soon
+                            text = paper_dict['description']
 
                         text = clean_paper(text)
                         paper_counter += 1
                         print('Papers is at ',paper_counter)
-                        #print('counter is at ', paper_counter, ' papers.')
 
                         for sentence in sent_tokenize(text):
-                            words = word_tokenize(sentence)
+                            words = sentence.split() # don't want word_tokenize
                             yield(words)
 
+class MultiLoader():
+    """
+    This class creates an object able to iterate through multiple journal-dictionaries
+    worth of abstracts/fulltexts. Primarily used for building a model vocab.
+    """
+
+    def __init__(self, journal_directory_list, years='all', retrieval_type='fulltext'):
+        """
+        This method initializes the multiloader object
+
+        Parameters:
+            journal_directory_list (list, required): list of absolute paths to all journals
+                being included in the iterator object.
+        """
+        self.journal_directory_list = journal_directory_list
+        self.years = years
+        self.retrieval_type = retrieval_type
+
+    def __iter__(self):
+        """
+        This method iterates through every sentence of all journals included in the
+        journal list from type 'retrieval_type'
+        """
+        for journal_directory in self.journal_directory_list:
+            text_loader = SingleLoader(journal_directory, years = self.years,
+                                       retrieval_type = self.retrieval_type)
+            text_loader.__iter__()
+
+### DACB, here is the new bit I'm unsure will work
+def w2v_main():
+    """
+    Method to execute training of word2Word2Vec
+    """
+    corpus_path = '/gscratch/pfaendtner/dacj/nlp/fulltext_pOmOmOo/'
+    j_carbon = 'Carbon'
+    j_organometallic = 'Journal_of_Organometallic_Chemistry'
+    j_inorg_biochem = 'Journal_of_Inorganic_Biochemistry'
+    jlist = [corpus_path + j_carbon, corpus_path + j_organometallic, corpus_path + j_inorg_biochem]
+
+    # creating the multiloader iterator object
+    multi_j_loader = MultiLoader(multi_j_loader, years='all', retrieval_type='abstract')
+
+    # calling Word2Vec in the same manner I did with a
+    model = Word2Vec(multi_j_loader, min_count=10, workers=1, size=200)
+    os.chdir('/gscratch/pfaendtner/dacj/nlp/3_journal_model/')
+    model.save('3_journal_model.model')
+
+w2v_main()
+
+######################################### For DACB, below is the old call for a single journal that worked
 
 # def w2v_main():
-#     """
-#     This is the main method to be executed
-#     """
-#     generator = Loader('/gscratch/pfaendtner/dacj/nlp/fulltext_pOmOmOo/Carbon')
-#     model = Word2Vec(generator, min_count=10, workers=1, size=200)
-#     os.chdir('/gscratch/pfaendtner/dacj/nlp')
-#     model.save('carbon.model')
+#      """
+#      This is the main method to be executed
+#      """
+#      generator = SingleLoader('/gscratch/pfaendtner/dacj/nlp/fulltext_pOmOmOo/Carbon')
+#      model = Word2Vec(generator, min_count=10, workers=1, size=200)
+#      os.chdir('/gscratch/pfaendtner/dacj/nlp')
+#      model.save('carbon.model')
 #
-# main()
+#  w2v_main()
