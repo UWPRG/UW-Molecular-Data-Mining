@@ -241,21 +241,22 @@ def make_ner_sheet(journal_directory, retrieval_type='description', years='all',
             # create dataframe
             name   = ['' for x in range(len(data))]
             besio  = np.array(['' for x in range(len(data))])
-            entity = np.array(['' for x in range(len(data))])
-            
+            entity = besio
+            mol_class = besio
             name[1] = pub_infos[pub_counter][0] # put the year in the second entry
             name[2] = pub_infos[pub_counter][1] # put the pub index within the year as third entry
             name[3] = pub_infos[pub_counter][2] # put the pub doie as fourth entry
 
             name = np.array(name) # now turn it into np array
 
-            columns = ['name', 'tokens', 'BESIO', 'entity (MOL/PRO)']
+            columns = ['name', 'tokens', 'BESIO', 'entity', 'mol_class']
 
-            df = pd.DataFrame(np.array([name, data, besio, entity]).transpose(), columns=columns)
+            df = pd.DataFrame(np.array([name, data, besio, entity, mol_class]).transpose(), columns=columns)
 
             # write the damn thing to excel in the propper column
-            filename = 'carbon_ner_labels.xlsx'
-            append_df_to_excel(filename, df, sheet_name=f'Sheet{sheet_number}', startcol = 6 * pubs_in_sheet)
+            sheet_name = json_filename[:-5]
+            filename = f'{sheet_name}_{sheet_number}.xlsx'
+            append_df_to_excel(filename, df, sheet_name=f'Sheet1', startcol = 6 * pubs_in_sheet)
 
             pubs_in_sheet += 1
             pubs_in_excel += 1
@@ -370,7 +371,10 @@ def label_main():
     This is the main method for the paper label exection.
     """
     carbon_path = '/gscratch/pfaendtner/dacj/nlp/fulltext_pOmOmOo/Carbon'
-    make_ner_sheet(carbon_path, num_papers = 1000)
+    j_in_bio = '/gscratch/pfaendtner/dacj/nlp/fulltext_pOmOmOo/Journal_of_Inorganic_Biochemistry'
+    j_o_metallic = '/gscratch/pfaendtner/dacj/nlp/fulltext_pOmOmOo/Journal_of_Organometallic_Chemistry'
+    #make_ner_sheet(j_in_bio, num_papers = 300, pubs_per_sheet = 50)
+    make_ner_sheet(j_o_metallic, num_papers = 300, pubs_per_sheet = 50)
 
 label_main()
 
