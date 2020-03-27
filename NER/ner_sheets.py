@@ -2,6 +2,7 @@ import json
 import os
 import time
 import random
+import math
 
 from nltk.tokenize import word_tokenize
 from nltk.tokenize import sent_tokenize
@@ -251,16 +252,83 @@ def find_longest_paper(pubs):
     return longest
 
 
-
-
-def label_main():
+def find_labeled(df):
     """
-    This is the main method for the paper label exection.
-    """
-    carbon_path = '/gscratch/pfaendtner/dacj/nlp/fulltext_pOmOmOo/Carbon'
-    j_in_bio = '/gscratch/pfaendtner/dacj/nlp/fulltext_pOmOmOo/Journal_of_Inorganic_Biochemistry'
-    j_o_metallic = '/gscratch/pfaendtner/dacj/nlp/fulltext_pOmOmOo/Journal_of_Organometallic_Chemistry'
-    #make_ner_sheet(j_in_bio, num_papers = 300, pubs_per_sheet = 50)
-    make_ner_sheet(j_o_metallic, num_papers = 300, pubs_per_sheet = 50)
+    This function takes in a labeled NER sheet, and finds the columns that have been labeled.
 
-label_main()
+    Parameters:
+        df (pandas DataFrame, required): The dataframe containing the labeled NER information
+
+    Returns:
+        pandas DataFrame: Dataframe containing only labeled abstracts, and their labels.
+    """
+
+    labeled = []
+    columns = df.columns
+
+    new_df = pd.DataFrame()
+
+    for idx, column in enumerate(columns):
+        # skip the columns that say Unnamed.x
+        if column.startswith('Unnamed'):
+            continue
+        else:
+            pass
+
+        # find every column that starts with 'name'
+        if column.startswith('name'):
+
+            # check if the entry in 'name' cell is a str
+            if isinstance(df[column][0], str):
+                # put the name column in new_df
+                new_df[column] = df[column]
+
+                tokens = df[columns[idx + 1]].values
+                new_df[columns[idx + 1]] = tokens # put the tokens in new_df
+
+                # assume there is at least one label column after
+                # start at 2 because first label column is +2 ahead of 'name' col
+                nextcol = columns[idx + 2]
+
+                # also start this at 2, increment in while-loop to look further into frame
+                fwd_idx = 2
+
+                while not (nextcol.startswith('Unnamed')):
+
+                    labels = df[nextcol].values
+                    new_df[nextcol] = labels
+                    fwd_idx += 1
+                    nextcol = columns[idx + fwd_idx]
+
+    return new_df
+
+def collect_ner_data(folder_path):
+    """
+    This function collects all the labeled NER training data from a folder holding
+    any number of ner_sheet folders from different journals.
+
+    Parameters:
+        folder_path (str, required): The path to a folder containing other folders.
+            Those "other folders" correspond to different journals, and contain
+            filled out excel spreadsheets with NER training data.
+
+    Returns:
+        array: array of tuples. Each tuple contains one list of tokens, and the
+            corresponding NER labels for each token.
+
+    """
+    raw_df = pd.read_excel(input_path)
+
+    return raw_df
+
+# def label_main():
+#     """
+#     This is the main method for the paper label exection.
+#     """
+#     carbon_path = '/gscratch/pfaendtner/dacj/nlp/fulltext_pOmOmOo/Carbon'
+#     j_in_bio = '/gscratch/pfaendtner/dacj/nlp/fulltext_pOmOmOo/Journal_of_Inorganic_Biochemistry'
+#     j_o_metallic = '/gscratch/pfaendtner/dacj/nlp/fulltext_pOmOmOo/Journal_of_Organometallic_Chemistry'
+#     #make_ner_sheet(j_in_bio, num_papers = 300, pubs_per_sheet = 50)
+#     make_ner_sheet(j_o_metallic, num_papers = 300, pubs_per_sheet = 50)
+#
+# label_main()
