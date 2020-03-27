@@ -4,6 +4,8 @@ import time
 import random
 import math
 
+from openpyxl import load_workbook
+
 from nltk.tokenize import word_tokenize
 from nltk.tokenize import sent_tokenize
 
@@ -181,9 +183,7 @@ def append_df_to_excel(filename, df, sheet_name='Sheet1', startrow=0, startcol=N
 
     Returns: None
     """
-    from openpyxl import load_workbook
 
-    import pandas as pd
     print('On dataframe ', startcol/6)
     # ignore [engine] parameter if it was passed
     if 'engine' in to_excel_kwargs:
@@ -315,11 +315,34 @@ def collect_ner_data(folder_path):
     Returns:
         array: array of tuples. Each tuple contains one list of tokens, and the
             corresponding NER labels for each token.
-
     """
-    raw_df = pd.read_excel(input_path)
+    # ensure we start with the same format every time
+    if not folder_path.endswith('/'):
+        folder_path += '/'
 
-    return raw_df
+    ner_folders = os.listdir(folder_path)
+
+    # iter through all NER data folders corresponding to a single journal
+    for journal in ner_folders:
+        journal_path = folder_path + journal + '/'
+
+        for sheet in journal_path:
+
+            if sheet.endswith('xlsx'): # don't want to open google sheets
+                df = pd.read_excel(sheet)
+                clean_df = find_labeled(df)
+            else:
+                pass
+
+def recover_sentences(tokens, sentence_endings):
+    """
+    Reconstructs the original sentences from an token list.
+
+    Parameters:
+        tokens (list, required): list of tokens from which to construct sentences
+
+    
+    """
 
 # def label_main():
 #     """
