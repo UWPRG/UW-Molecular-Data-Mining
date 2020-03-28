@@ -200,14 +200,14 @@ def make_ner_sheet(journal_directory, retrieval_type='description', years='all',
     pubs_in_excel = 0
     sheet_number = 0
     pub_counter = 0
-    sentence_endings_dict = {}
+    master_endings_dict = {}
 
 
     while pubs_in_excel < len(pubs) - 1:
 
         pubs_in_sheet = 0
+        dynamic_endings_dict = {}
         while pubs_in_sheet < pubs_per_sheet:
-
 
             data = pubs[pub_counter]
             while len(data) < longest:
@@ -235,16 +235,17 @@ def make_ner_sheet(journal_directory, retrieval_type='description', years='all',
             append_df_to_excel(filename, df, sheet_name=f'Sheet1', startcol = 6 * pubs_in_sheet)
 
             # append the sentence_endings lists into the dict
-            sentence_endings_dict[filename][pubs_in_sheet] = pub_infos[pub_counter][4]
+            dynamic_endings_dict[pubs_in_sheet] = pub_infos[pub_counter][4]
 
             pubs_in_sheet += 1
             pubs_in_excel += 1
             pub_counter += 1
 
         sheet_number += 1
+        master_endings_dict[filename] = dynamic_endings_dict
 
     with open('sentence_endings.json', 'w') as fp:
-        json.dump(sentence_endings_dict, fp)
+        json.dump(master_endings_dict, fp)
 
 def append_df_to_excel(filename, df, sheet_name='Sheet1', startrow=0, startcol=None,
                        truncate_sheet=False,
