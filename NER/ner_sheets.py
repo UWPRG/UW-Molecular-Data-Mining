@@ -12,6 +12,51 @@ from nltk.tokenize import sent_tokenize
 import numpy as np
 import pandas as pd
 
+def find_nth(haystack, needle, n):
+    """
+    This function finds the index of the nth instance of a substring
+    in a string
+    """
+    start = haystack.find(needle)
+    while start >= 0 and n > 1:
+        start = haystack.find(needle, start+len(needle))
+        n -= 1
+    return start
+
+def clean_paper(paper):
+    """
+    This method takes a single paper and does all the rule-based text preprocessing.
+
+    Parameters:
+    ___________
+    paper (str): The single paper to be preprocessed
+
+    Returns:
+    ________
+    paper (str): The cleaned and preprocessed paper
+    """
+   # this series of statements cuts off the abstract/highlights/references/intro words
+   # this method needs to be fixed, the elif sentences don't totally make sense
+    if paper.lower().count('highlights') != 0:
+        h_index = paper.lower().find('highlights')
+        paper = paper[h_index + len('highlights'):]
+
+    elif paper.lower().count('abstract') != 0:
+        a_index = paper.lower().find('abstract')
+        paper = paper[a_index + len('abstract'):]
+
+    elif paper.lower().count('introduction') != 0:
+        i_index = find_nth(paper.lower(),'introduction',2)
+        paper = paper[i_index + len('introduction'):]
+
+    else:
+        pass
+
+    r_index = paper.rfind('References')
+    paper = paper[:r_index]
+
+    return paper
+
 def make_ner_sheet(journal_directory, retrieval_type='description', years='all', scramble=True,
                    pick_random=True, num_papers=1000, seed=42, pubs_per_sheet=100):
     """
@@ -97,10 +142,12 @@ def make_ner_sheet(journal_directory, retrieval_type='description', years='all',
                 sent_endings = [] # will be built to track the index of sentence endings
 
                 for i, sentence in enumerate(sent_list):
-                    length = len(sent.split())
+                    length = len(sentence.split())
                     sent_endings.append(length)
                     for word in sentence.split():
                         pub_tokens.append(word)
+
+                pubs.append(pub_tokens)
 
                 # edit sent_endings so it actually corresponds to tokens in pub_tokens
                 # before this point, it's just a list of lengths, so doesn't work
@@ -115,7 +162,7 @@ def make_ner_sheet(journal_directory, retrieval_type='description', years='all',
                 # we will append them to info_tup, so they get carried with
                 # the associated publication through the scramble
 
-                pubs.append(pub_tokens)
+
                 info_tup = (year, pub_idx, year_dict[pub_idx]['doi'], year_dict[pub_idx]['pii'], sent_endings)
                 pub_infos.append(info_tup)
 
