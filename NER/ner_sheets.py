@@ -33,7 +33,7 @@ def make_ner_sheet(journal_directory, retrieval_type='description', years='all',
 
         num_papers (int, optional): How many papers to put in the spreadsheets.
             Ceder et al stopped improving training accuracy after about 600-650
-            abstracts worth of NER data.
+            abstracts worth of NER data
     """
     files = os.listdir(journal_directory)
 
@@ -341,7 +341,7 @@ def recover_sentences(tokens, sentence_endings):
     Parameters:
         tokens (list, required): list of tokens from which to construct sentences
 
-    
+
     """
 
 # def label_main():
