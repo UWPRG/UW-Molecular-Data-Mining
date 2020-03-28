@@ -93,17 +93,55 @@ def make_ner_sheet(journal_directory, retrieval_type='description', years='all',
                 if text == None: # some abstracts and fulltexts just aren't there
                     continue
                 text = clean_paper(text)
-                for sentence in sent_tokenize(text):
+                sent_list = sent_tokenize(text)
+                sent_endings = [] # will be built to track the index of sentence endings
+
+                for i, sentence in enumerate(sent_list):
+                    length = len(sent.split())
+                    sent_endings.append(length)
                     for word in sentence.split():
                         pub_tokens.append(word)
 
+                # edit sent_endings so it actually corresponds to tokens in pub_tokens
+                # before this point, it's just a list of lengths, so doesn't work
+                # for indexing
+                for i, num in enumerate(sent_endings):
+                    if i == 0:
+                        pass
+                    else:
+                        sent_endings[i] = sent_endings[i] + sent_endings[i-1]
+                sent_endings = np.array(sent_endings) - 1
+                # at this point, sent_endings needs to be stored for later access
+                # we will append them to info_tup, so they get carried with
+                # the associated publication through the scramble
+
                 pubs.append(pub_tokens)
-                info_tup = (year, pub_idx, year_dict[pub_idx]['doi'], year_dict[pub_idx]['pii'])
+                info_tup = (year, pub_idx, year_dict[pub_idx]['doi'], year_dict[pub_idx]['pii'], sent_endings)
                 pub_infos.append(info_tup)
 
             except:
                 break
 
+#     # grab the relevant text corresponding to the random index #########
+#     if retrieval_type == 'description':
+#         text = year_dict[pub_idx]['description'] # need to change this to 'abstract' in pyblio
+#     else:
+#         text = year_dict[pub_idx]['fulltext']
+#
+#     if text == None: # some abstracts and fulltexts just aren't there
+#         continue
+#     text = clean_paper(text)
+#     for sentence in sent_tokenize(text):
+#         for word in sentence.split():
+#             pub_tokens.append(word)
+#
+#     pubs.append(pub_tokens)
+#     info_tup = (year, pub_idx, year_dict[pub_idx]['doi'], year_dict[pub_idx]['pii'])
+#     pub_infos.append(info_tup)
+#
+# except:
+#     break ##########
+    ########################### at this point, all pub tokens are made and stored
     np.random.seed(42)
     np.random.shuffle(pubs)
 
@@ -115,6 +153,7 @@ def make_ner_sheet(journal_directory, retrieval_type='description', years='all',
     pubs_in_excel = 0
     sheet_number = 0
     pub_counter = 0
+    sentence_endings_dict = {}
 
 
     while pubs_in_excel < len(pubs) - 1:
@@ -135,7 +174,7 @@ def make_ner_sheet(journal_directory, retrieval_type='description', years='all',
             mol_class = besio
             name[1] = pub_infos[pub_counter][0] # put the year in the second entry
             name[2] = pub_infos[pub_counter][1] # put the pub index within the year as third entry
-            name[3] = pub_infos[pub_counter][2] # put the pub doie as fourth entry
+            name[3] = pub_infos[pub_counter][2] # put the pub doi as fourth entry
 
             name = np.array(name) # now turn it into np array
 
@@ -148,12 +187,17 @@ def make_ner_sheet(journal_directory, retrieval_type='description', years='all',
             filename = f'{sheet_name}_{sheet_number}.xlsx'
             append_df_to_excel(filename, df, sheet_name=f'Sheet1', startcol = 6 * pubs_in_sheet)
 
+            # append the sentence_endings lists into the dict
+            sentence_endings_dict[filename][pubs_in_sheet] = pub_infos[pub_counter][4]
+
             pubs_in_sheet += 1
             pubs_in_excel += 1
             pub_counter += 1
 
         sheet_number += 1
 
+    with open('sentence_endings.json', 'w') as fp:
+        json.dump(sentence_endings_dict, fp)
 
 def append_df_to_excel(filename, df, sheet_name='Sheet1', startrow=0, startcol=None,
                        truncate_sheet=False,
