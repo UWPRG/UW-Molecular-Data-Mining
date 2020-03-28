@@ -435,14 +435,15 @@ def recover_sentences(tokens, sentence_endings):
 
     """
 
-# def label_main():
-#     """
-#     This is the main method for the paper label exection.
-#     """
-#     carbon_path = '/gscratch/pfaendtner/dacj/nlp/fulltext_pOmOmOo/Carbon'
-#     j_in_bio = '/gscratch/pfaendtner/dacj/nlp/fulltext_pOmOmOo/Journal_of_Inorganic_Biochemistry'
-#     j_o_metallic = '/gscratch/pfaendtner/dacj/nlp/fulltext_pOmOmOo/Journal_of_Organometallic_Chemistry'
-#     #make_ner_sheet(j_in_bio, num_papers = 300, pubs_per_sheet = 50)
-#     make_ner_sheet(j_o_metallic, num_papers = 300, pubs_per_sheet = 50)
-#
-# label_main()
+def label_main():
+    """
+    This is the main method for the paper label exection.
+    """
+    carbon_path = '/gscratch/pfaendtner/dacj/nlp/fulltext_pOmOmOo/Carbon'
+    j_in_bio = '/gscratch/pfaendtner/dacj/nlp/fulltext_pOmOmOo/Journal_of_Inorganic_Biochemistry'
+    j_o_metallic = '/gscratch/pfaendtner/dacj/nlp/fulltext_pOmOmOo/Journal_of_Organometallic_Chemistry'
+    make_ner_sheet(carbon_path, num_papers = 300, pubs_per_sheet = 50)
+    #make_ner_sheet(j_in_bio, num_papers = 300, pubs_per_sheet = 50)
+    #make_ner_sheet(j_o_metallic, num_papers = 300, pubs_per_sheet = 50)
+
+label_main()
