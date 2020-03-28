@@ -163,7 +163,7 @@ def make_ner_sheet(journal_directory, retrieval_type='description', years='all',
                 # the associated publication through the scramble
 
 
-                info_tup = (year, pub_idx, year_dict[pub_idx]['doi'], year_dict[pub_idx]['pii'], sent_endings)
+                info_tup = (year, pub_idx, year_dict[pub_idx]['doi'], year_dict[pub_idx]['pii'], sent_endings.tolist())
                 pub_infos.append(info_tup)
 
             except:
@@ -208,8 +208,10 @@ def make_ner_sheet(journal_directory, retrieval_type='description', years='all',
         pubs_in_sheet = 0
         dynamic_endings_dict = {}
         while pubs_in_sheet < pubs_per_sheet:
-
-            data = pubs[pub_counter]
+            try:
+                data = pubs[pub_counter]
+            except IndexError:
+                break
             while len(data) < longest:
                 data.append('')
             data = np.array(data)
@@ -443,8 +445,8 @@ def label_main():
     carbon_path = '/gscratch/pfaendtner/dacj/nlp/fulltext_pOmOmOo/Carbon'
     j_in_bio = '/gscratch/pfaendtner/dacj/nlp/fulltext_pOmOmOo/Journal_of_Inorganic_Biochemistry'
     j_o_metallic = '/gscratch/pfaendtner/dacj/nlp/fulltext_pOmOmOo/Journal_of_Organometallic_Chemistry'
-    make_ner_sheet(carbon_path, num_papers = 300, pubs_per_sheet = 50)
-    #make_ner_sheet(j_in_bio, num_papers = 300, pubs_per_sheet = 50)
-    #make_ner_sheet(j_o_metallic, num_papers = 300, pubs_per_sheet = 50)
+    #make_ner_sheet(carbon_path, num_papers = 300, pubs_per_sheet = 50)
+    make_ner_sheet(j_in_bio, num_papers = 300, pubs_per_sheet = 50)
+    make_ner_sheet(j_o_metallic, num_papers = 300, pubs_per_sheet = 50)
 
 label_main()
