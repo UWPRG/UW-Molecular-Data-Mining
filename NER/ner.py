@@ -355,23 +355,28 @@ def make_journal_training_data(path):
     Returns:
         list: A list of tuples, where each tuple contains the x and y NER training data
     """
+    if not path.endswith('/'):
+        path += '/'
+
     filenames = os.listdir(path)
     sheets = [file for file in filenames if file.endswith('xlsx')]
+    
     for filename in filenames:
         if filename.endswith('.json'):
             json_filename = filename
             break
 
-    with open(json_filename, 'r') as fp:
+    with open(path + json_filename, 'r') as fp:
         endings = json.load(fp) # the dictionary of sentence ending indecies
                                 # for each text in each sheet
     training_data = []
     for sheet in sheets:
-        sheet_df = pd.read_excel(sheet)
+        sheet_df = pd.read_excel(path + sheet)
         endings_dict = endings[sheet]   # select the sentence end indices corresponding
 
         data = extract_xy(sheet_df, endings_dict)
-        training_data.append(data)
+        if len(data) != 0:
+            training_data.append(data)
 
     return training_data
 
@@ -529,11 +534,18 @@ def from_endings(tokens, labels, endings):
             label_lists.append(sentence_labels)
 
         else: # we are at the last sentence
-            previous_ending = endings[i-1]
-            start = previous_ending + 1
+            try: # this works for sentences that aren't the longest sentence
+                previous_ending = endings[i-1]
+                start = previous_ending + 1
 
-            sentence = tokens[start:]
-            sentence_labels = labels[start:]
+                sentence = tokens[start:ending+1]
+                sentence_labels = labels[start:ending+1]
+            except IndexError: # we are at the longest sentence,
+                previous_ending = endings[i-1]
+                start = previous_ending + 1
+
+                sentence = tokens[start:]
+                sentence_labels = labels[start:]
             sentences.append(sentence)
             label_lists.append(sentence_labels)
 
@@ -566,7 +578,7 @@ def build_labels(label_iterator):
                     full_tag = '-'.join((full_tag,tag))
                 else:
                     pass
-        labels.append(full_tag)
+        labels.append(full_tag.upper())
     return labels
 
 def make_all_training_data(folder_path):
@@ -583,6 +595,7 @@ def make_all_training_data(folder_path):
         array: array of tuples. Each tuple contains one list of tokens, and the
             corresponding NER labels for each token.
     """
+    training_data = {}
     # ensure we start with the same format every time
     if not folder_path.endswith('/'):
         folder_path += '/'
@@ -593,13 +606,9 @@ def make_all_training_data(folder_path):
     for journal in ner_folders:
         journal_path = folder_path + journal + '/'
 
-        for sheet in journal_path:
+        training_data[journal] = make_journal_training_data(journal_path)
 
-            if sheet.endswith('xlsx'): # don't want to open google sheets
-                df = pd.read_excel(sheet)
-                clean_df = find_labeled(df)
-            else:
-                pass
+    return training_data
 
 
 # def label_main():
