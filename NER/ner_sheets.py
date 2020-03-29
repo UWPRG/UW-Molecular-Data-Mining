@@ -346,21 +346,60 @@ def find_longest_paper(pubs):
     return longest
 
 
-def find_labeled(df):
+def make_training_data(path):
     """
     This function takes in a labeled NER sheet, and finds the columns that have been labeled.
 
     Parameters:
-        df (pandas DataFrame, required): The dataframe containing the labeled NER information
+        path (str, required): The absolute path to a directory containing the labeled
+            NER training data for a SINGLE journal, and the sentence_endings .json.
 
     Returns:
-        pandas DataFrame: Dataframe containing only labeled abstracts, and their labels.
+        list: A list of tuples, where each tuple contains the x and y NER training data
     """
+    filenames = os.listdir(path)
+    sheets = [file for file in filenames if file.endswith('xlsx')]
+    for filename in filenames:
+        if filename.endswith('.json'):
+            json_filename = filename
+            break
 
+    with open(json_filename, 'r') as fp:
+        endings = json.load(fp) # the dictionary of sentence ending indecies
+                                # for each text in each sheet
+    training_data = []
+    for sheet in sheets:
+        sheet_df = pd.read_excel(sheet)
+        endings_dict = endings[sheet]   # select the sentence end indices corresponding
+
+        data = extract_xy(sheet_df, endings_dict)
+        training_data.append(data)
+
+    return training_data
+
+
+def extract_xy(df, endings_dict):
+    """
+    This method extracts and correctly aranges the NER training x-values (tokens)
+    and y-values (BESIO labels) from a pandas dataframe containing labeled NER
+    data
+
+    Parameters:
+        df (pandas DataFrame, required): Dataframe loaded via pd.read_excel() on
+            a labeled NER dataset
+
+        endings_dict (dictionary, required): Dictionary containing the indicies
+            where each sentence in each line of tokens ends.
+
+    Returns:
+        list: List of tuples, containing the x,y pairs
+    """
     labeled = []
     columns = df.columns
 
     new_df = pd.DataFrame()
+    besio_iterators = [] # will contain a list of iterators
+    training_x = [] # will contain lists of tokens, one for each text
 
     for idx, column in enumerate(columns):
         # skip the columns that say Unnamed.x
@@ -378,6 +417,7 @@ def find_labeled(df):
                 new_df[column] = df[column]
 
                 tokens = df[columns[idx + 1]].values
+                training_x.append(tokens)
                 new_df[columns[idx + 1]] = tokens # put the tokens in new_df
 
                 # assume there is at least one label column after
@@ -386,15 +426,33 @@ def find_labeled(df):
 
                 # also start this at 2, increment in while-loop to look further into frame
                 fwd_idx = 2
-
+                master_labels = []
                 while not (nextcol.startswith('Unnamed')):
+                    if nextcol.startswith('BESIO'):
+                        labels = df[nextcol].replace(np.nan, 'O')
+                    else:
+                        labels = df[nextcol].replace(np.nan, '')
 
-                    labels = df[nextcol].values
+                    # putting the labels into clean dataframe
                     new_df[nextcol] = labels
                     fwd_idx += 1
                     nextcol = columns[idx + fwd_idx]
 
+                    # also putting the labels into a list to be concatenated
+                    master_labels.append(labels.tolist())
+
+                ###### FIX THIS NEXT LINE. IT IS NOT GENERALIZABLE #########
+                zipper = zip(master_labels[0], master_labels[1], master_labels[2])
+                besio_iterators.append(zipper)
+
+    #data = arange_xy(training_x, besio_iterators)
+
     return new_df
+
+def arange_xy(training_x, iterators):
+    """
+    
+    """
 
 def collect_ner_data(folder_path):
     """
@@ -438,15 +496,15 @@ def recover_sentences(tokens, sentence_endings):
 
     """
 
-def label_main():
-    """
-    This is the main method for the paper label exection.
-    """
-    carbon_path = '/gscratch/pfaendtner/dacj/nlp/fulltext_pOmOmOo/Carbon'
-    j_in_bio = '/gscratch/pfaendtner/dacj/nlp/fulltext_pOmOmOo/Journal_of_Inorganic_Biochemistry'
-    j_o_metallic = '/gscratch/pfaendtner/dacj/nlp/fulltext_pOmOmOo/Journal_of_Organometallic_Chemistry'
-    #make_ner_sheet(carbon_path, num_papers = 300, pubs_per_sheet = 50)
-    make_ner_sheet(j_in_bio, num_papers = 300, pubs_per_sheet = 50)
-    make_ner_sheet(j_o_metallic, num_papers = 300, pubs_per_sheet = 50)
-
-label_main()
+# def label_main():
+#     """
+#     This is the main method for the paper label exection.
+#     """
+#     carbon_path = '/gscratch/pfaendtner/dacj/nlp/fulltext_pOmOmOo/Carbon'
+#     j_in_bio = '/gscratch/pfaendtner/dacj/nlp/fulltext_pOmOmOo/Journal_of_Inorganic_Biochemistry'
+#     j_o_metallic = '/gscratch/pfaendtner/dacj/nlp/fulltext_pOmOmOo/Journal_of_Organometallic_Chemistry'
+#     #make_ner_sheet(carbon_path, num_papers = 300, pubs_per_sheet = 50)
+#     make_ner_sheet(j_in_bio, num_papers = 300, pubs_per_sheet = 50)
+#     make_ner_sheet(j_o_metallic, num_papers = 300, pubs_per_sheet = 50)
+#
+# label_main()
