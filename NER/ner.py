@@ -169,26 +169,6 @@ def make_ner_sheet(journal_directory, retrieval_type='description', years='all',
             except:
                 break
 
-#     # grab the relevant text corresponding to the random index #########
-#     if retrieval_type == 'description':
-#         text = year_dict[pub_idx]['description'] # need to change this to 'abstract' in pyblio
-#     else:
-#         text = year_dict[pub_idx]['fulltext']
-#
-#     if text == None: # some abstracts and fulltexts just aren't there
-#         continue
-#     text = clean_paper(text)
-#     for sentence in sent_tokenize(text):
-#         for word in sentence.split():
-#             pub_tokens.append(word)
-#
-#     pubs.append(pub_tokens)
-#     info_tup = (year, pub_idx, year_dict[pub_idx]['doi'], year_dict[pub_idx]['pii'])
-#     pub_infos.append(info_tup)
-#
-# except:
-#     break ##########
-    ########################### at this point, all pub tokens are made and stored
     np.random.seed(42)
     np.random.shuffle(pubs)
 
@@ -360,7 +340,7 @@ def make_journal_training_data(path):
 
     filenames = os.listdir(path)
     sheets = [file for file in filenames if file.endswith('xlsx')]
-    
+
     for filename in filenames:
         if filename.endswith('.json'):
             json_filename = filename
@@ -570,16 +550,48 @@ def build_labels(label_iterator):
         for i, tag in enumerate(entry):
             if i == 0:
                 if tag != '':           # theoretically this is redundant if the
-                    full_tag = tag      # BESIO column comes first
+                    full_tag = clean_tag(tag)     # BESIO column comes first
                 else:
                     pass
             else:
                 if tag != '':
-                    full_tag = '-'.join((full_tag,tag))
+                    full_tag = '-'.join((full_tag, clean_tag(tag)))
                 else:
                     pass
-        labels.append(full_tag.upper())
+
+        # if for some reason the full tag ended up being 1 character
+        # assume it should be an 'O'
+        if len(full_tag) == 1:
+            full_tag = 'O'
+
+        labels.append(full_tag)
     return labels
+
+def clean_tag(tag):
+    """
+    Function to clean up human tagging mistakes. Non generalizable function.
+
+    Need to edit in future to make more generalizeable
+    """
+    tag = tag.upper().strip()
+    if not tag.isalnum():
+        tag = '<Unknown>'
+
+    elif 'MO' in tag or 'OL' in tag:
+        tag = 'MOL'
+
+    elif 'P' in tag and 'R' in tag:
+        tag = 'PRO'
+
+    elif tag == 'EE':
+        tag = 'E'
+
+    elif tag == 'BB':
+        tag = 'B'
+
+    return tag
+
+
 
 def make_all_training_data(folder_path):
     """
@@ -610,6 +622,83 @@ def make_all_training_data(folder_path):
 
     return training_data
 
+class NerData():
+
+    def __init__(self, path):
+        """
+        Parameters:
+            path (str, required): path to a directory of sub-directories containig
+                labeled NER data for different journals in .xlsx files
+        """
+        self.training_dict = make_all_training_data(path)
+        self.word_set, self.char_set, self.label_set = self.word_char_label_sets(self.training_dict)
+
+        self.word2ix, self.ix2word = self.set2ix(self.word_set)
+        self.char2ix, self.ix2char = self.set2ix(self.char_set)
+        self.label2ix, self.ix2label = self.set2ix(self.label_set)
+        self.list = self.tolist()
+
+
+    def set2ix(self, set):
+        """
+        This method iterates through a set to create a dictionary of unique integer
+        mappings for each element in the set.
+
+        Parameters:
+            set (python set): set of unique values to get mappings for
+
+        Returns:
+            dict: dictionary of integer mappings for each element in set
+        """
+        set_to_ix = {}
+        for item in set:
+            set_to_ix[item] = len(set_to_ix)
+
+        ix_to_set = {set_to_ix[key]:key for key in set_to_ix}
+
+        return set_to_ix, ix_to_set
+
+
+    def word_char_label_sets(self, training_dict):
+        """
+        This method creates the sets of all possible words, characters, and labels present in a
+        NER training data dictionary.
+        """
+        label_set = []
+        big_string = ''
+
+        for journal_data in training_dict.keys():
+            for sheet_data in training_dict[journal_data]:
+                for xy in sheet_data:
+
+                    sent_list = xy[0]
+                    tags = xy[1]
+
+                    for word in sent_list:
+                        big_string = ' '.join((big_string, str(word)))
+
+                    for tag in set(tags):
+                        if tag not in label_set:
+                            label_set.append(tag)
+
+        word_set = set(big_string.split())
+        char_set = set(big_string)
+        label_set = set(label_set)
+
+        return word_set, char_set, label_set
+
+    def tolist(self):
+        """
+        This method creates one long list of training xy pairs.
+        """
+        master_list = []
+        for journal_data in self.training_dict.keys():
+            for sheet_data in self.training_dict[journal_data]:
+                for xy in sheet_data:
+
+                    master_list.append(xy)
+
+        return master_list
 
 # def label_main():
 #     """
