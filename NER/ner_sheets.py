@@ -325,8 +325,6 @@ def append_df_to_excel(filename, df, sheet_name='Sheet1', startrow=0, startcol=N
     writer.save()
 
 
-
-
 def find_longest_paper(pubs):
     """
     This function finds the longest paper in a year_dict, in terms of how many
@@ -346,7 +344,7 @@ def find_longest_paper(pubs):
     return longest
 
 
-def make_training_data(path):
+def make_journal_training_data(path):
     """
     This function takes in a labeled NER sheet, and finds the columns that have been labeled.
 
@@ -398,12 +396,18 @@ def extract_xy(df, endings_dict):
     columns = df.columns
 
     new_df = pd.DataFrame()
-    besio_iterators = [] # will contain a list of iterators
-    training_x = [] # will contain lists of tokens, one for each text
+    training_y_iterators = []   # will contain a list of iterators
+    training_x = []             # will contain lists of tokens, one for each text
+    frame_indicies = []         # will contain indicies of dataframes that actually
+                                # had NER labels in them
 
     for idx, column in enumerate(columns):
         # skip the columns that say Unnamed.x
         if column.startswith('Unnamed'):
+            if idx == 0:
+                frame_ticker = 0
+            else:
+                frame_ticker += 1
             continue
         else:
             pass
@@ -419,6 +423,10 @@ def extract_xy(df, endings_dict):
                 tokens = df[columns[idx + 1]].values
                 training_x.append(tokens)
                 new_df[columns[idx + 1]] = tokens # put the tokens in new_df
+
+                # append this successful index into idxs so we know which df in
+                # the sheet this is
+                frame_indicies.append(frame_ticker)
 
                 # assume there is at least one label column after
                 # start at 2 because first label column is +2 ahead of 'name' col
@@ -443,18 +451,125 @@ def extract_xy(df, endings_dict):
 
                 ###### FIX THIS NEXT LINE. IT IS NOT GENERALIZABLE #########
                 zipper = zip(master_labels[0], master_labels[1], master_labels[2])
-                besio_iterators.append(zipper)
+                training_y_iterators.append(zipper)
 
-    #data = arange_xy(training_x, besio_iterators)
+    data = arange_xy(training_x, training_y_iterators, endings_dict, frame_indicies)
 
-    return new_df
+    return data # used to return new_df
 
-def arange_xy(training_x, iterators):
+def arange_xy(training_x, training_y_iterators, endings_dict, frame_indicies):
     """
-    
-    """
+    This functions properly aranges the xy training data contained in training_x and
+    training_y_iterators.
 
-def collect_ner_data(folder_path):
+    Parameters:
+        training_x (list, required): List of lists. Each nested list contains all
+            the tokens from a single NER text (abstract or fulltext)
+
+        training_y_iterators (list, required): List of iterators. The ith iterator
+            corresponds to the ith token list in training_x. Each iterator iterates
+            through one tuple for every token. Every tuple contains the label
+
+        endings_dict (dict, required): Dictionary containing lists of token indecies
+            where sentences end.
+
+        frame_indicies (list, required): A list whose ith entry corresponds to the index
+            of the ith training_x and ith trainin_y entry. Used to get the correct
+            sentence endings list from endings_dict.
+
+    Returns:
+        list: list of tuples. Each tuple[0] is a training x-value, and each tuple[1]
+            is a training y-value.
+    """
+    data = []
+    for idx, tokens in enumerate(training_x):
+        frame_number = str(frame_indicies[idx])         # get the correct frame number
+        sentence_endings = endings_dict[frame_number]   # get the indicies of the endings of each sentence
+        label_iterator = training_y_iterators[idx]      # get the corresponding iterator
+
+        labels = build_labels(label_iterator)
+
+        # rebuild the list of sentences
+        sentences, label_lists = from_endings(tokens.tolist(), labels, sentence_endings)
+        for idx2, sentence in enumerate(sentences):
+            data.append((sentence, label_lists[idx2]))
+
+    return data
+
+def from_endings(tokens, labels, endings):
+    """
+    This function reconstructs the original sentences (and their corresponding
+    labels) from a token list.
+
+    Parameters:
+        tokens (list, required): List of tokens to be reconstructed into sentences
+
+        labels (list, required): List of labels, with ith label corresponding to
+            ith token
+
+        endings (list, required): List of indicies where sentences end in the token
+            list.
+    """
+    sentences = []
+    label_lists = []
+    for i, ending in enumerate(endings):
+        if i == 0:
+            sentence = tokens[:ending + 1]
+            sentence_labels = labels[:ending + 1]
+            sentences.append(sentence)
+            label_lists.append(sentence_labels)
+
+        elif i != len(endings) - 1: # this would be the last ending in endings
+            previous_ending = endings[i-1]
+            start = previous_ending + 1
+
+            sentence = tokens[start: ending + 1 ]
+            sentence_labels = labels[start: ending + 1 ]
+            sentences.append(sentence)
+            label_lists.append(sentence_labels)
+
+        else: # we are at the last sentence
+            previous_ending = endings[i-1]
+            start = previous_ending + 1
+
+            sentence = tokens[start:]
+            sentence_labels = labels[start:]
+            sentences.append(sentence)
+            label_lists.append(sentence_labels)
+
+    return sentences, label_lists
+
+def build_labels(label_iterator):
+    """
+    This function constructs a list of BESIO labels from an iterator over the
+    label tuples.
+
+    Parameters:
+        label_iterator (iterator, required): Iterates through the label tuples
+            corresponding to each token in a NER-labeled token list
+
+    Returns:
+        list: List of strings, each string is the concatenated BESIO label for
+            a token
+    """
+    labels = []
+    for entry in label_iterator:
+
+        for i, tag in enumerate(entry):
+            if i == 0:
+                if tag != '':           # theoretically this is redundant if the
+                    full_tag = tag      # BESIO column comes first
+                else:
+                    pass
+            else:
+                if tag != '':
+                    full_tag = '-'.join((full_tag,tag))
+                else:
+                    pass
+        labels.append(full_tag)
+    return labels
+
+def make_all_training_data(folder_path):
     """
     This function collects all the labeled NER training data from a folder holding
     any number of ner_sheet folders from different journals.
@@ -486,15 +601,6 @@ def collect_ner_data(folder_path):
             else:
                 pass
 
-def recover_sentences(tokens, sentence_endings):
-    """
-    Reconstructs the original sentences from an token list.
-
-    Parameters:
-        tokens (list, required): list of tokens from which to construct sentences
-
-
-    """
 
 # def label_main():
 #     """
