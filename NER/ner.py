@@ -351,7 +351,14 @@ def make_journal_training_data(path):
                                 # for each text in each sheet
     training_data = []
     for sheet in sheets:
-        sheet_df = pd.read_excel(path + sheet)
+
+        # create a fake dataframe just to get the columns
+        fake_df = pd.read_excel(path + sheet)
+        convertable_cols = fake_df.columns
+        converters = {col:str for col in convertable_cols}
+
+        # the real sheet df, but making sure pandas interprets all data as strings
+        sheet_df = pd.read_excel(path + sheet, converters=converters)
         endings_dict = endings[sheet]   # select the sentence end indices corresponding
 
         data = extract_xy(sheet_df, endings_dict)
@@ -405,7 +412,7 @@ def extract_xy(df, endings_dict):
                 # put the name column in new_df
                 new_df[column] = df[column]
 
-                tokens = df[columns[idx + 1]].values
+                tokens = df[columns[idx + 1]].values # this used to just be df[columns[idx + 1]].values
                 training_x.append(tokens)
                 new_df[columns[idx + 1]] = tokens # put the tokens in new_df
 
