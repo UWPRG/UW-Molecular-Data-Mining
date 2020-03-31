@@ -353,6 +353,7 @@ def make_journal_training_data(path):
     for sheet in sheets:
 
         # create a fake dataframe just to get the columns
+        #print(path+sheet)
         fake_df = pd.read_excel(path + sheet)
         convertable_cols = fake_df.columns
         converters = {col:str for col in convertable_cols}
@@ -631,14 +632,19 @@ def make_all_training_data(folder_path):
 
 class NerData():
 
-    def __init__(self, path):
+    def __init__(self, path, w2v_model):
         """
         Parameters:
             path (str, required): path to a directory of sub-directories containig
                 labeled NER data for different journals in .xlsx files
+
+            w2v_model (gensim w2v model, required): trained word2vec model containing
+                word embeddings
         """
         self.training_dict = make_all_training_data(path)
-        self.word_set, self.char_set, self.label_set = self.word_char_label_sets(self.training_dict)
+        self.w2v_model = w2v_model
+
+        self.word_set, self.char_set, self.label_set = self.word_char_label_sets(self.training_dict, w2v_model)
 
         self.word2ix, self.ix2word = self.set2ix(self.word_set)
         self.char2ix, self.ix2char = self.set2ix(self.char_set)
@@ -666,11 +672,18 @@ class NerData():
         return set_to_ix, ix_to_set
 
 
-    def word_char_label_sets(self, training_dict):
+    def word_char_label_sets(self, training_dict, w2v_model):
         """
         This method creates the sets of all possible words, characters, and labels present in a
         NER training data dictionary.
+
+        Parameters:
+            training_dict (dict, required): Training data dictionary from make_all_training_data
+
+            w2v_model (gensim w2v model, required): The word2vec model that will be referenced
+                for word embeddings and vocabulary
         """
+        w2v_words = w2v_model.wv.vocab.keys() # they keys to the word embeddings
         label_set = []
         big_string = ''
 
@@ -687,6 +700,8 @@ class NerData():
                     for tag in set(tags):
                         if tag not in label_set:
                             label_set.append(tag)
+        for word in w2v_words:
+            big_string = ' '.join((big_string, str(word)))
 
         word_set = set(big_string.split())
         char_set = set(big_string)
