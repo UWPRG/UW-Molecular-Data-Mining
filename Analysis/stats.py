@@ -95,20 +95,20 @@ def corpus_stats(corpus_path):
                         stats['abstracts'] += 1                 #increment abs stat
                         stats['words'] += len(abstract.split())
                         CDE_mols, ptable = append_cde_mols(abstract, CDE_mols, ptable)
-                        print('successful abstract grab')
+                        print('Length of CDE mols is ', len(CDE_mols))
                     else:
                         pass
                 except KeyError:
                     print('Abstract key error')
                     pass
-                
+
                 try:
                     fulltext = paper_dict['fulltext']
                     if fulltext != None:
                         stats['fulltexts'] += 1                 #increment ft stat
                         stats['words'] += len(fulltext.split())
                         CDE_mols, ptable = append_cde_mols(fulltext, CDE_mols, ptable)
-                        print('successful fulltext grab')
+                        print('Length of CDE mols is ', len(CDE_mols))
                     else:
                         pass
                 except KeyError:
@@ -135,19 +135,16 @@ def append_cde_mols(text, mol_list, ptable):
     """
     para = Paragraph(text)
     new_mols = para.cems # find all molecules in the text
-    appended_mols = []
 
     for mol in new_mols:
-        if mol.text not in appended_mols:
-            mol_list.append(mol.text)
-            appended_mols.append(mol.text)
+        mol_list.append(mol.text)
+        print('appended ', mol)
 
-        try:
-            ptable[mol.text.lower] += 1
-        except KeyError:
-            pass
 
-    return mol_list, ptable
+    # try:
+    #     ptable[mol.text.lower] += 1
+    # except KeyError:
+    #     pass
 
 
 def main(corpus_path, output_dir):
@@ -160,11 +157,11 @@ def main(corpus_path, output_dir):
     Returns:
         none
     """
-   
+
     print('inside of main method')
 
     ptable, stats, CDE_mols = corpus_stats(corpus_path)
-    
+
     os.chdir(output_dir)
 
     with open('ptable2.json', 'w') as fp:
