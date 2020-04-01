@@ -6,6 +6,8 @@ import json
 from chemdataextractor.doc import Paragraph
 #import pubchempy as pcp
 
+print('Successful imports')
+
 def read_ptable():
     """
     This function reads the periodic table file 'periodic_table.txt' and sets up a
@@ -20,7 +22,7 @@ def read_ptable():
     """
     ptable = {}
 
-    with open('periodict_table.txt', 'r') as file:
+    with open('periodic_table.txt', 'r') as file:
         for line in file:
 
             tokens = line.split()
@@ -51,7 +53,7 @@ def corpus_stats(corpus_path):
 
         dict: Dictionary of various other corpus stats.
     """
-    ptable_stats = read_ptable() # create dictionary of periodic table elements
+    ptable = read_ptable() # create dictionary of periodic table elements
     stats = {'papers':0, 'abstracts':0, 'fulltexts':0, 'words':0, 'CDE_mols':0}
     CDE_mols = []
 
@@ -67,7 +69,9 @@ def corpus_stats(corpus_path):
     for journal_name in journals:
         journal_path = corpus_path + journal_name +'/'
 
-        journal_json = jour_path + journal_name + '.json'
+        journal_json = journal_path + journal_name + '.json'
+
+        print('On journal ', journal_name)
 
         # open the entire dictionary corresponding to a single jornal
         with open(journal_json) as json_file:
@@ -76,6 +80,7 @@ def corpus_stats(corpus_path):
         # iterate through the journal years
         for year in journal_dict:
             year_dict = journal_dict[year]
+            print(year)
 
             # iterate through every paper number in that year
             for paper in year_dict:
@@ -84,18 +89,33 @@ def corpus_stats(corpus_path):
 
                 # in the paper dict there are,
                 # 'description', 'fulltext', 'doi', 'pii'...
-                if paper_dict['description'] != None:
+                try:
                     abstract = paper_dict['description']
-                    stats['abstracts'] += 1                 #increment abs stat
-                    words += len(abstract.split())
-                elif paper_dict['fulltext'] != None:
+                    if abstract != None:
+                        stats['abstracts'] += 1                 #increment abs stat
+                        stats['words'] += len(abstract.split())
+                        CDE_mols, ptable = append_cde_mols(abstract, CDE_mols, ptable)
+                        print('successful abstract grab')
+                    else:
+                        pass
+                except KeyError:
+                    print('Abstract key error')
+                    pass
+                
+                try:
                     fulltext = paper_dict['fulltext']
-                    stats['fulltexts'] += 1                 #increment ft stat
-                    words += len(fulltext.split())
+                    if fulltext != None:
+                        stats['fulltexts'] += 1                 #increment ft stat
+                        stats['words'] += len(fulltext.split())
+                        CDE_mols, ptable = append_cde_mols(fulltext, CDE_mols, ptable)
+                        print('successful fulltext grab')
+                    else:
+                        pass
+                except KeyError:
+                    print('fulltext key error')
+                    pass
 
 
-                CDE_mols, ptable = append_cde_mols(abstract, CDE_mols, ptable)
-                CDE_mols, ptabel = append_cde_mols(fulltext, CDE_mols, ptable)
 
     CDE_mols = set(CDE_mols)
     stats['CDE_mols'] = len(CDE_mols)
@@ -113,7 +133,7 @@ def append_cde_mols(text, mol_list, ptable):
     Returns:
         list: list of all molecules in the text
     """
-    para = Paragraph(pub)
+    para = Paragraph(text)
     new_mols = para.cems # find all molecules in the text
     appended_mols = []
 
@@ -130,7 +150,7 @@ def append_cde_mols(text, mol_list, ptable):
     return mol_list, ptable
 
 
-def main(output_dir):
+def main(corpus_path, output_dir):
     """
     Main method to be called.
 
@@ -140,18 +160,26 @@ def main(output_dir):
     Returns:
         none
     """
-    corpus_path = 'something'
-    ptable, stats, CDE_mols = corpus_stats(corpus_path)
+   
+    print('inside of main method')
 
-    with open('ptable.json', 'w') as fp:
+    ptable, stats, CDE_mols = corpus_stats(corpus_path)
+    
+    os.chdir(output_dir)
+
+    with open('ptable2.json', 'w') as fp:
         json.dump(ptable, fp)
 
-    with open('corpus_stats.json', 'w') as fp:
+    with open('corpus_stats2.json', 'w') as fp:
         json.dump(stats, fp)
 
-    with open('CDE_mols.txt', 'w') as file:
+    with open('CDE_mols2.txt', 'w') as file:
         for mol in CDE_mols:
             file.write(mol)
             file.write('\n')
 
-main()
+
+output_dir = '/gscratch/pfaendtner/dacj/nlp/stats_pmmo'
+corpus_path = '/gscratch/pfaendtner/dacj/nlp/fulltext_pOmOmOo'
+
+main(corpus_path, output_dir)
