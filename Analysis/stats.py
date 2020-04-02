@@ -94,7 +94,7 @@ def corpus_stats(corpus_path):
                     if abstract != None:
                         stats['abstracts'] += 1                 #increment abs stat
                         stats['words'] += len(abstract.split())
-                        CDE_mols, ptable = append_cde_mols(abstract, CDE_mols, ptable)
+                        append_cde_mols(abstract, CDE_mols, ptable)
                         print('Length of CDE mols is ', len(CDE_mols))
                     else:
                         pass
@@ -107,7 +107,7 @@ def corpus_stats(corpus_path):
                     if fulltext != None:
                         stats['fulltexts'] += 1                 #increment ft stat
                         stats['words'] += len(fulltext.split())
-                        CDE_mols, ptable = append_cde_mols(fulltext, CDE_mols, ptable)
+                        append_cde_mols(fulltext, CDE_mols, ptable)
                         print('Length of CDE mols is ', len(CDE_mols))
                     else:
                         pass
