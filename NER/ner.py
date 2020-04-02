@@ -12,6 +12,9 @@ from nltk.tokenize import sent_tokenize
 import numpy as np
 import pandas as pd
 
+# if debug is True, print statements occure to help identify problem sheet
+debug = False
+
 def find_nth(haystack, needle, n):
     """
     This function finds the index of the nth instance of a substring
@@ -340,6 +343,8 @@ def make_journal_training_data(path):
 
     filenames = os.listdir(path)
     sheets = [file for file in filenames if file.endswith('xlsx')]
+    if debug:
+        print('This is the sheet list ', sheets)
 
     for filename in filenames:
         if filename.endswith('.json'):
@@ -353,7 +358,8 @@ def make_journal_training_data(path):
     for sheet in sheets:
 
         # create a fake dataframe just to get the columns
-        #print(path+sheet)
+        if debug:
+            print(path+sheet)
         fake_df = pd.read_excel(path + sheet)
         convertable_cols = fake_df.columns
         converters = {col:str for col in convertable_cols}
@@ -362,6 +368,8 @@ def make_journal_training_data(path):
         sheet_df = pd.read_excel(path + sheet, converters=converters)
         endings_dict = endings[sheet]   # select the sentence end indices corresponding
 
+        # print('This is path ', path)
+        # print('This is sheet ', sheet)
         data = extract_xy(sheet_df, endings_dict)
         if len(data) != 0:
             training_data.append(data)
@@ -395,6 +403,7 @@ def extract_xy(df, endings_dict):
                                 # had NER labels in them
 
     for idx, column in enumerate(columns):
+        #print('This is column ', column)
         # skip the columns that say Unnamed.x
         if column.startswith('Unnamed'):
             if idx == 0:
@@ -437,6 +446,7 @@ def extract_xy(df, endings_dict):
                     # putting the labels into clean dataframe
                     new_df[nextcol] = labels
                     fwd_idx += 1
+
                     nextcol = columns[idx + fwd_idx]
 
                     # also putting the labels into a list to be concatenated
@@ -685,7 +695,6 @@ class NerData():
         """
         w2v_words = w2v_model.wv.vocab.keys() # they keys to the word embeddings
         label_set = []
-        big_string = ''
 
         for journal_data in training_dict.keys():
             for sheet_data in training_dict[journal_data]:
@@ -694,17 +703,20 @@ class NerData():
                     sent_list = xy[0]
                     tags = xy[1]
 
-                    for word in sent_list:
-                        big_string = ' '.join((big_string, str(word)))
-
                     for tag in set(tags):
                         if tag not in label_set:
                             label_set.append(tag)
-        for word in w2v_words:
-            big_string = ' '.join((big_string, str(word)))
 
-        word_set = set(big_string.split())
-        char_set = set(big_string)
+        word_set = []
+        char_set = []
+        for word in w2v_words:
+            word_set.append(word)
+            for char in word:
+                if char not in char_set:
+                    char_set.append(char)
+
+        word_set = set(word_set)
+        char_set = set(char_set)
         label_set = set(label_set)
 
         return word_set, char_set, label_set
