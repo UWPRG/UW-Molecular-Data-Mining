@@ -54,8 +54,7 @@ def corpus_stats(corpus_path):
         dict: Dictionary of various other corpus stats.
     """
     ptable = read_ptable() # create dictionary of periodic table elements
-    stats = {'papers':0, 'abstracts':0, 'fulltexts':0, 'words':0, 'CDE_mols':0}
-    CDE_mols = []
+    stats = {'papers':0, 'abstracts':0, 'fulltexts':0, 'words':0}
 
     # make sure we have consistent endings
     if not corpus_path.endswith('/'):
@@ -94,8 +93,6 @@ def corpus_stats(corpus_path):
                     if abstract != None:
                         stats['abstracts'] += 1                 #increment abs stat
                         stats['words'] += len(abstract.split())
-                        append_cde_mols(abstract, CDE_mols, ptable)
-                        print('Length of CDE mols is ', len(CDE_mols))
                     else:
                         pass
                 except KeyError:
@@ -107,8 +104,6 @@ def corpus_stats(corpus_path):
                     if fulltext != None:
                         stats['fulltexts'] += 1                 #increment ft stat
                         stats['words'] += len(fulltext.split())
-                        append_cde_mols(fulltext, CDE_mols, ptable)
-                        print('Length of CDE mols is ', len(CDE_mols))
                     else:
                         pass
                 except KeyError:
@@ -116,11 +111,7 @@ def corpus_stats(corpus_path):
                     pass
 
 
-
-    CDE_mols = set(CDE_mols)
-    stats['CDE_mols'] = len(CDE_mols)
-
-    return ptable, stats, CDE_mols
+    return ptable, stats
 
 
 def append_cde_mols(text, mol_list, ptable):
@@ -160,7 +151,7 @@ def main(corpus_path, output_dir):
 
     print('inside of main method')
 
-    ptable, stats, CDE_mols = corpus_stats(corpus_path)
+    ptable, stats = corpus_stats(corpus_path)
 
     os.chdir(output_dir)
 
@@ -170,10 +161,10 @@ def main(corpus_path, output_dir):
     with open('corpus_stats2.json', 'w') as fp:
         json.dump(stats, fp)
 
-    with open('CDE_mols2.txt', 'w') as file:
-        for mol in CDE_mols:
-            file.write(mol)
-            file.write('\n')
+    # with open('CDE_mols2.txt', 'w') as file:
+    #     for mol in CDE_mols:
+    #         file.write(mol)
+    #         file.write('\n')
 
 
 output_dir = '/gscratch/pfaendtner/dacj/nlp/stats_pmmo'
