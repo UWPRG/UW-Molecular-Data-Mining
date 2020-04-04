@@ -113,6 +113,78 @@ def corpus_stats(corpus_path):
 
     return ptable, stats
 
+def get_CDE_mols(corpus_path, years, ppy, output_path, mode='fulltext'):
+    """
+    This function grabs
+
+    Parameters:
+        corpus_path (str, required): Path to the corpus
+
+        years (list, required): List of years to find mols for
+
+        ppy (int, required): Papers per year. How many papers to get mols from per
+            year
+
+        output_path (str, required): path to place output data to be furher analyzed
+
+        mode (str, optional): Either 'fulltext' or 'abstract' or 'both'
+    """
+    cwd = os.get_cwd()
+    os.chdir('/Users/DavidJuergens/Desktop/BETO2020/NER/')
+    from ner import find_nth, clean_pub
+    os.chdir(cwd)
+
+    # make sure we have consistent endings
+    if not corpus_path.endswith('/'):
+        corpus_path += '/'
+
+    # get a list of all the journal directories and remove the README
+    journals = os.listdir(corpus_path)
+    journals.remove('README.txt')
+
+    random.seed(42)
+    random.shuffle(journals)
+
+    # iterate through every journal in corpus
+    for journal_name in journals:
+        journal_path = corpus_path + journal_name +'/'
+
+        journal_json = journal_path + journal_name + '.json'
+
+        print('On journal ', journal_name)
+
+        # open the entire dictionary corresponding to a single jornal
+        with open(journal_json) as json_file:
+            journal_dict = json.load(json_file)
+
+        # iterate through the specified years in parameter
+        for year in years:
+            year_dict = journal_dict[year]
+            print(year)
+
+            paper_idxs = random.sample(range(len(year_dict)))
+            for num in paper_idxs:
+                print('On paper ', num, ' of ', len(journals)*len(years)*ppy)
+                # grab the paper from this year corresponding to the 'numth' paper
+                paper_dict = year_dict[num]
+
+                # get the fulltext out
+                try:
+                    text = paper_dict['fulltext']
+                except:
+                    continue
+
+                # remove nonsense information
+                text = clean_paper(text)
+
+                para = Paragraph(text)
+                mols = para.cems # find all molecules in the text
+
+                mols = ['NEW_PAPER'] + [mol.text for mol in mols]
+                with open(output_path, 'a') as file:
+                    for entry in mols:
+                        file.write(entry,'\n')
+                    file.write('\n')
 
 def append_cde_mols(text, mol_list, ptable):
     """
@@ -130,13 +202,6 @@ def append_cde_mols(text, mol_list, ptable):
     for mol in new_mols:
         mol_list.append(mol.text)
         print('appended ', mol)
-
-
-    # try:
-    #     ptable[mol.text.lower] += 1
-    # except KeyError:
-    #     pass
-
 
 def main(corpus_path, output_dir):
     """
