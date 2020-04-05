@@ -4,9 +4,58 @@ This module is for calculating stats on a large corpus of text data.
 import os
 import json
 from chemdataextractor.doc import Paragraph
+import sys
+import random
 #import pubchempy as pcp
 
 print('Successful imports')
+
+
+def find_nth(haystack, needle, n):
+    """
+    This function finds the index of the nth instance of a substring
+    in a string
+    """
+    start = haystack.find(needle)
+    while start >= 0 and n > 1:
+        start = haystack.find(needle, start+len(needle))
+        n -= 1
+    return start
+
+def clean_paper(paper):
+    """
+    This method takes a single paper and does all the rule-based text preprocessing.
+
+    Parameters:
+    ___________
+    paper (str): The single paper to be preprocessed
+
+    Returns:
+    ________
+    paper (str): The cleaned and preprocessed paper
+    """
+   # this series of statements cuts off the abstract/highlights/references/intro words
+   # this method needs to be fixed, the elif sentences don't totally make sense
+    if paper.lower().count('highlights') != 0:
+        h_index = paper.lower().find('highlights')
+        paper = paper[h_index + len('highlights'):]
+
+    elif paper.lower().count('abstract') != 0:
+        a_index = paper.lower().find('abstract')
+        paper = paper[a_index + len('abstract'):]
+
+    elif paper.lower().count('introduction') != 0:
+        i_index = find_nth(paper.lower(),'introduction',2)
+        paper = paper[i_index + len('introduction'):]
+
+    else:
+        pass
+
+    r_index = paper.rfind('References')
+    paper = paper[:r_index]
+
+    return paper
+
 
 def read_ptable():
     """
@@ -129,11 +178,7 @@ def get_CDE_mols(corpus_path, years, ppy, output_path, mode='fulltext'):
 
         mode (str, optional): Either 'fulltext' or 'abstract' or 'both'
     """
-    cwd = os.get_cwd()
-    os.chdir('/Users/DavidJuergens/Desktop/BETO2020/NER/')
-    from ner import find_nth, clean_pub
-    os.chdir(cwd)
-
+    paper_count = 0
     # make sure we have consistent endings
     if not corpus_path.endswith('/'):
         corpus_path += '/'
@@ -161,29 +206,34 @@ def get_CDE_mols(corpus_path, years, ppy, output_path, mode='fulltext'):
         for year in years:
             year_dict = journal_dict[year]
             print(year)
-
-            paper_idxs = random.sample(range(len(year_dict)))
+            try:
+                # don't know if there will be enough papers in this year for this pub
+                paper_idxs = random.sample(range(len(year_dict)), ppy)
+            except:
+                continue
             for num in paper_idxs:
-                print('On paper ', num, ' of ', len(journals)*len(years)*ppy)
+                paper_count += 1
+                print('On paper ', paper_count, ' of ', len(journals)*len(years)*ppy)
                 # grab the paper from this year corresponding to the 'numth' paper
-                paper_dict = year_dict[num]
+                paper_dict = year_dict[str(num)]
 
                 # get the fulltext out
                 try:
                     text = paper_dict['fulltext']
                 except:
                     continue
-
+                if type(text) != str:
+                    continue
                 # remove nonsense information
                 text = clean_paper(text)
 
                 para = Paragraph(text)
                 mols = para.cems # find all molecules in the text
 
-                mols = ['NEW_PAPER'] + [mol.text for mol in mols]
+                mols = ['<<NEW_PAPER>>'] + [mol.text for mol in mols]
                 with open(output_path, 'a') as file:
                     for entry in mols:
-                        file.write(entry,'\n')
+                        file.write(entry + '\n')
                     file.write('\n')
 
 def append_cde_mols(text, mol_list, ptable):
@@ -203,7 +253,7 @@ def append_cde_mols(text, mol_list, ptable):
         mol_list.append(mol.text)
         print('appended ', mol)
 
-def main(corpus_path, output_dir):
+def main(corpus_path, output_path):
     """
     Main method to be called.
 
@@ -213,26 +263,12 @@ def main(corpus_path, output_dir):
     Returns:
         none
     """
-
-    print('inside of main method')
-
-    ptable, stats = corpus_stats(corpus_path)
-
-    os.chdir(output_dir)
-
-    with open('ptable2.json', 'w') as fp:
-        json.dump(ptable, fp)
-
-    with open('corpus_stats2.json', 'w') as fp:
-        json.dump(stats, fp)
-
-    # with open('CDE_mols2.txt', 'w') as file:
-    #     for mol in CDE_mols:
-    #         file.write(mol)
-    #         file.write('\n')
+    ppy = 5
+    years = ['2019']
+    get_CDE_mols(corpus_path, years, ppy, output_path, mode='fulltext')
 
 
-output_dir = '/gscratch/pfaendtner/dacj/nlp/stats_pmmo'
+output_path = '/gscratch/pfaendtner/dacj/nlp/stats_pmmo/2015_5ppy_CDE_mols.txt'
 corpus_path = '/gscratch/pfaendtner/dacj/nlp/fulltext_pOmOmOo'
 
-main(corpus_path, output_dir)
+main(corpus_path, output_path)
