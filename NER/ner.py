@@ -734,6 +734,111 @@ class NerData():
 
         return master_list
 
+def make_cei_sheet(abstract_file, num_abstracts, file_name='CI_ner_labeling', seed=42, pubs_per_sheet=100):
+
+    ff = open(abstract_file, 'r')
+    file = ff.readlines()
+
+    abstracts = []
+    abs_infos = []
+
+    random.seed(seed)
+    abs_idxs = random.sample(range(len(file)), num_abstracts)
+    random_abs = []
+    for i in abs_idxs:
+        random_abs.append(file[i])
+
+    while len(abs_idxs) > 0:
+        abs_idx = abs_idxs.pop(0)
+        text = file[abs_idx]
+
+        sent_list = sent_tokenize(text)
+        sent_endings = []
+        abs_tokens = []
+        dis_tokens = []
+        if len(sent_list) > 0:
+
+            for i, sentence in enumerate(sent_list):
+                length = len(sentence.split())
+    #             print(length)
+
+                sent_endings.append(length)
+                for word in sentence.split():
+                    abs_tokens.append(word)
+
+
+        else:
+            dis_tokens.append(sent_list)
+
+        print(dis_tokens)
+
+        abstracts.append(abs_tokens)
+
+        for i, num in enumerate(sent_endings):
+            if i == 0:
+                pass
+            else:
+                sent_endings[i] = sent_endings[i] + sent_endings[i-1]
+        sent_endings = np.array(sent_endings) - 1
+
+        info_tup = (abs_idx, sent_endings.tolist())
+        abs_infos.append(info_tup)
+
+
+    np.random.seed(42)
+    np.random.shuffle(abstracts)
+
+    np.random.seed(42)
+    np.random.shuffle(abs_infos)
+
+    pubs_in_excel = 0
+    sheet_number = 0
+    pub_counter = 0
+    master_endings_dict = {}
+
+
+    while pubs_in_excel < len(abstracts) - 1:
+
+        pubs_in_sheet = 0
+        dynamic_endings_dict = {}
+        while pubs_in_sheet < pubs_per_sheet:
+            try:
+                data = abstracts[pub_counter]
+            except IndexError:
+                break
+
+            data = np.array(data)
+
+            # create dataframe
+            name   = ['' for x in range(len(data))]
+            besio  = np.array(['' for x in range(len(data))])
+            entity = besio
+            mol_class = besio
+
+            name = np.array(name) # now turn it into np array
+
+            columns = ['name', 'tokens', 'BESIO', 'entity', 'mol_class']
+
+            df = pd.DataFrame(np.array([name, data, besio, entity, mol_class]).transpose(), columns=columns)
+            df['name'][0] = 'enter your name'
+
+            # write the damn thing to excel in the propper column
+            sheet_name = file_name
+            filename = f'{sheet_name}_{sheet_number}.xlsx'
+            append_df_to_excel(filename, df, sheet_name=f'Sheet1', startcol = 6 * pubs_in_sheet)
+
+            # append the sentence_endings lists into the dict
+            dynamic_endings_dict[pubs_in_sheet] = abs_infos[pub_counter][1]
+
+            pubs_in_sheet += 1
+            pubs_in_excel += 1
+            pub_counter += 1
+
+        sheet_number += 1
+        master_endings_dict[filename] = dynamic_endings_dict
+
+    with open('sentence_endings.json', 'w') as fp:
+        json.dump(master_endings_dict, fp)
 # def label_main():
 #     """
 #     This is the main method for the paper label exection.
