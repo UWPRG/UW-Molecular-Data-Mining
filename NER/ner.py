@@ -1,13 +1,18 @@
 import json
 import os
+import re
 import time
 import random
 import math
+import collections
 
 from openpyxl import load_workbook
 
+from chemdataextractor import Document
+
 from nltk.tokenize import word_tokenize
 from nltk.tokenize import sent_tokenize
+# from mat2vec.mat2vec.processing.process import MaterialsTextProcessor
 from mat2vec.processing.process import MaterialsTextProcessor
 
 import numpy as np
@@ -26,6 +31,8 @@ def find_nth(haystack, needle, n):
         start = haystack.find(needle, start+len(needle))
         n -= 1
     return start
+
+######## TEXT PROCESSING ##########
 
 def clean_paper(paper):
     """
@@ -145,6 +152,201 @@ def clean_CI_abstract(abstract):
     text = clean_graphics_text(text)
     return text
 
+def clean_Elsevier_abstract(abstract):
+    abstract = row['abstract'].split('\n')
+    info = []
+    for line in abstract:
+        line = line.strip()
+        if line != '':
+            info.append(line)
+    if len(info) == 2:
+        abstract_type = info[0]
+        clean_abstract = info[1]
+    elif len(info) == 1:
+        if info[0].split()[0].lower() == 'abstract':
+            abstract_type = 'Abstract'
+            clean_abstract = ' '.join(info[0].split()[1:])
+        elif info[0].split()[0].lower() == 'summary':
+            abstract_type = 'Summary'
+            clean_abstract = ' '.join(info[0].split()[1:])
+        elif 'objective' in info[0].split()[0].lower():
+            abstract_type = 'Objective'
+            clean_abstract = ' '.join(info[0].split()[1:])
+        else:
+            abstract_type = ''
+            clean_abstract = info[0]
+    else:
+        info_lower = [x.lower() for x in info]
+        section_titles = ['introduction',
+                          'purpose',
+                          'background',
+                          'scope and approach',
+                          'objective',
+                          'objectives',
+                          'materials and methods',
+                          'results',
+                          'conclusion',
+                          'conclusions',
+                          'key findings',
+                          'key findings and conclusions',
+                          'methodology',
+                          'methods',
+                          'study design',
+                          'clinical implications']
+        sectioned = False
+        for section_title in section_titles:
+            if section_title in info_lower:
+                sectioned = True
+        if sectioned:
+            if info[0].lower() == 'abstract':
+                abstract_type = 'Abstract'
+                text = []
+                for entry in info[1:]:
+                    if entry.lower() in section_titles:
+                        pass
+                    else:
+                        text.append(entry)
+                clean_abstract = ' '.join(text)
+            elif info[0].lower() == 'summary':
+                abstract_type = 'Summary'
+                text = []
+                for entry in info[1::]:
+                    if entry.lower() in section_titles:
+                        pass
+                    else:
+                        text.append(entry)
+                clean_abstract = ' '.join(text)
+            else:
+                abstract_type = ''
+                text = []
+                for entry in info:
+                    if entry.lower() in section_titles:
+                        pass
+                    else:
+                        text.append(entry)
+                clean_abstract = ' '.join(text)
+        else:
+            if info[0].lower() == 'abstract' or info[0].lower() == 'absract' or info[0].lower() == 'abstact' or info[0].lower() == 'abstractt':
+                abstract_type = 'Abstract'
+                clean_abstract = ' '.join(info[1:])
+            elif info[0].lower() == 'summary' or info[0].lower() == 'publisher summary' or info[0].lower() == '1. summary':
+                abstract_type = 'Summary'
+                clean_abstract = ' '.join(info[1:])
+            elif info[0] == 'This article has been retracted: please see Elsevier Policy on Article Withdrawal (https://www.elsevier.com/about/our-business/policies/article-withdrawal).':
+                abstract_type = 'Retracted'
+                clean_abstract = 'Retracted'
+            else:
+                abstract_type = ''
+                clean_abstract = ' '.join(info)
+    return clean_abstract, abstract_type
+
+def remove_abbreviations(abstract):
+    doc = Document(abstract)
+    abbvs = doc.abbreviation_definitions
+    cems = doc.cems
+    if len(abbvs) > 0:
+        abbv_dict = {}
+        for abbv in abbvs:
+            cem_starts = []
+            cem_ends = []
+            if abbv[-1] is not None:
+                abbv_dict[abbv[0][0]] = [' '.join(abbv[1])]
+                for cem in cems:
+                    if cem.text == abbv[0][0]:
+                        cem_starts.append(cem.start)
+                        cem_ends.append(cem.end)
+                if len(cem_starts) > 0:
+                    low_idx = cem_starts[np.argmin(cem_starts)]
+                else:
+                    low_idx = 0
+                abbv_dict[abbv[0][0]].append(low_idx)
+        abbv_dict = {k: v for k, v in sorted(abbv_dict.items(), key=lambda item: item[1][1])}
+        index_change = 0
+        for abbv in abbv_dict.keys():
+            non_abbv = abbv_dict[abbv][0]
+            if abbv_dict[abbv][1] != 0:
+                replacement_delta = len(non_abbv) - len(abbv)
+                cem_starts = []
+                cem_ends = []
+                for cem in cems:
+                    if cem.text == abbv:
+                        cem_starts.append(cem.start)
+                        cem_ends.append(cem.end)
+                if len(cem_starts) == 1:
+                    if abstract[cem_starts[0]+index_change-1]+abstract[cem_ends[0]+index_change] == '()':
+                        abstract = abstract[:cem_starts[0]-2+index_change] + abstract[cem_ends[0]+1+index_change:]
+                        index_change += cem_starts[0] - cem_ends[0] - 3
+                    else:
+                        pass
+                else:
+                    low_idx = np.argmin(cem_starts)
+                    cem_start_low = cem_starts[low_idx]
+                    cem_end_low = cem_ends[low_idx]
+                    if abstract[cem_start_low+index_change-1]+abstract[cem_end_low+index_change] == '()':
+                        abstract = abstract[:cem_start_low-2+index_change] + abstract[cem_end_low+1+index_change:]
+                        index_change += cem_start_low - cem_end_low - 3
+                    else:
+                        pass
+                abstract = re.sub(r'([\s]){}([.,;\s]|$)'.format(abbv), r' {}\2'.format(non_abbv), abstract)
+            else:
+                pass
+    return abstract
+
+def normalize_elements(abstract):
+    ELEMENTS = ["H", "He", "Li", "Be", "B", "C", "N", "O", "F", "Ne", "Na", "Mg", "Al", "Si", "P", "S", "Cl", "Ar", "K",
+                "Ca", "Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", "Ga", "Ge", "As", "Se", "Br", "Kr",
+                "Rb", "Sr", "Y", "Zr", "Nb", "Mo", "Tc", "Ru", "Rh", "Pd", "Ag", "Cd", "In", "Sn", "Sb", "Te", "I",
+                "Xe", "Cs", "Ba", "La", "Ce", "Pr", "Nd", "Pm", "Sm", "Eu", "Gd", "Tb", "Dy", "Ho", "Er", "Tm", "Yb",
+                "Lu", "Hf", "Ta", "W", "Re", "Os", "Ir", "Pt", "Au", "Hg", "Tl", "Pb", "Bi", "Po", "At", "Rn", "Fr",
+                "Ra", "Ac", "Th", "Pa", "U", "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm", "Md", "No", "Lr", "Rf",
+                "Db", "Sg", "Bh", "Hs", "Mt", "Ds", "Rg", "Cn", "Nh", "Fl", "Mc", "Lv", "Ts", "Og", "Uue"]
+
+    ELEMENT_NAMES = ["hydrogen", "helium", "lithium", "beryllium", "boron", "carbon", "nitrogen", "oxygen", "fluorine",
+                     "neon", "sodium", "magnesium", "aluminium", "silicon", "phosphorus", "sulfur", "chlorine", "argon",
+                     "potassium", "calcium", "scandium", "titanium", "vanadium", "chromium", "manganese", "iron",
+                     "cobalt", "nickel", "copper", "zinc", "gallium", "germanium", "arsenic", "selenium", "bromine",
+                     "krypton", "rubidium", "strontium", "yttrium", "zirconium", "niobium", "molybdenum", "technetium",
+                     "ruthenium", "rhodium", "palladium", "silver", "cadmium", "indium", "tin", "antimony", "tellurium",
+                     "iodine", "xenon", "cesium", "barium", "lanthanum", "cerium", "praseodymium", "neodymium",
+                     "promethium", "samarium", "europium", "gadolinium", "terbium", "dysprosium", "holmium", "erbium",
+                     "thulium", "ytterbium", "lutetium", "hafnium", "tantalum", "tungsten", "rhenium", "osmium",
+                     "iridium", "platinum", "gold", "mercury", "thallium", "lead", "bismuth", "polonium", "astatine",
+                     "radon", "francium", "radium", "actinium", "thorium", "protactinium", "uranium", "neptunium",
+                     "plutonium", "americium", "curium", "berkelium", "californium", "einsteinium", "fermium",
+                     "mendelevium", "nobelium", "lawrencium", "rutherfordium", "dubnium", "seaborgium", "bohrium",
+                     "hassium", "meitnerium", "darmstadtium", "roentgenium", "copernicium", "nihonium", "flerovium",
+                     "moscovium", "livermorium", "tennessine", "oganesson", "ununennium"]
+    element_dict = {}
+    for element, name in zip(ELEMENTS, ELEMENT_NAMES):
+        element_dict[element] = name
+    element_dict['aluminium'] = 'aluminum'
+    doc = Document(abstract)
+    cems = doc.cems
+    names = []
+    starts = []
+    ends = []
+    for cem in cems:
+        if cem.text in element_dict.keys():
+            names.append(cem.text)
+            starts.append(cem.start)
+            ends.append(cem.end)
+    names = np.array(names)
+    starts = np.array(starts)
+    ends = np.array(ends)
+    sort = np.argsort(starts)
+    names = names[sort]
+    starts = starts[sort]
+    ends = ends[sort]
+
+    index_change = 0
+    for name, start, end in zip(names, starts, ends):
+        replace_name = element_dict[name]
+        replace_delta = len(replace_name) - len(name)
+        abstract = abstract[:start+index_change] + replace_name + abstract[end+index_change:]
+        index_change += replace_delta
+    return abstract
+
+######### LABELING #########
 
 def make_ner_sheet(journal_directory, retrieval_type='description', years='all', scramble=True,
                    pick_random=True, num_papers=1000, seed=42, pubs_per_sheet=100):
@@ -325,19 +527,22 @@ def make_CI_sheet(abstract_file, num_abstracts, file_name='CI_ner_labeling', see
     file = ff.readlines()
 
     abstracts = []
+    piis = []
+    dois = []
     abs_infos = []
 
     random.seed(seed)
     abs_idxs = random.sample(range(len(file)), num_abstracts)
     random_abs = []
+    random_piis = []
+    random_dois = []
     for i in abs_idxs:
-        random_abs.append(file[i])
+        random_abs.append(file[i].split('SPLITHERE')[0])
+        random_piis.append(file[i].split('SPLITHERE')[1])
+        random_dois.append(file[i].split('SPLITHERE')[2].split('\n')[0])
 
     processor = MaterialsTextProcessor()
-    while len(abs_idxs) > 0:
-        abs_idx = abs_idxs.pop(0)
-        text = file[abs_idx]
-
+    for i, (text, pii, doi) in enumerate(zip(random_abs, random_piis, random_dois)):
         sent_list = processor.tokenize(text, keep_sentences=True)
         sent_endings = []
         abs_tokens = []
@@ -353,6 +558,8 @@ def make_CI_sheet(abstract_file, num_abstracts, file_name='CI_ner_labeling', see
                 for char in word:
                     char_tokens.append(char)
         abstracts.append(abs_tokens)
+        piis.append(pii)
+        dois.append(doi)
 
         char_tokens = list(set(char_tokens))
 
@@ -363,15 +570,9 @@ def make_CI_sheet(abstract_file, num_abstracts, file_name='CI_ner_labeling', see
                 sent_endings[i] = sent_endings[i] + sent_endings[i-1]
         sent_endings = np.array(sent_endings) - 1
 
-        info_tup = (abs_idx, sent_endings.tolist())
+        info_tup = (i, sent_endings.tolist())
         abs_infos.append(info_tup)
 
-
-    np.random.seed(42)
-    np.random.shuffle(abstracts)
-
-    np.random.seed(42)
-    np.random.shuffle(abs_infos)
 
     pubs_in_excel = 0
     sheet_number = 0
@@ -386,6 +587,8 @@ def make_CI_sheet(abstract_file, num_abstracts, file_name='CI_ner_labeling', see
         while pubs_in_sheet < pubs_per_sheet:
             try:
                 data = abstracts[pub_counter]
+                pii = piis[pub_counter]
+                doi = dois[pub_counter]
             except IndexError:
                 break
 
@@ -403,6 +606,8 @@ def make_CI_sheet(abstract_file, num_abstracts, file_name='CI_ner_labeling', see
 
             df = pd.DataFrame(np.array([name, data, besio, entity, mol_class]).transpose(), columns=columns)
             df['name'][0] = 'enter your name'
+            df['name'][1] = pii
+            df['name'][2] = doi
 
             # write the damn thing to excel in the propper column
             sheet_name = file_name
