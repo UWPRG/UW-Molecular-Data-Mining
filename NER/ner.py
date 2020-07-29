@@ -8,6 +8,7 @@ import collections
 
 from openpyxl import load_workbook
 
+import pubchempy as pcp
 from chemdataextractor import Document
 
 from nltk.tokenize import word_tokenize
@@ -153,7 +154,7 @@ def clean_CI_abstract(abstract):
     return text
 
 def clean_Elsevier_abstract(abstract):
-    abstract = row['abstract'].split('\n')
+    abstract = abstract.split('\n')
     info = []
     for line in abstract:
         line = line.strip()
@@ -341,6 +342,87 @@ def normalize_elements(abstract):
     index_change = 0
     for name, start, end in zip(names, starts, ends):
         replace_name = element_dict[name]
+        replace_delta = len(replace_name) - len(name)
+        abstract = abstract[:start+index_change] + replace_name + abstract[end+index_change:]
+        index_change += replace_delta
+    return abstract
+
+def find_all_unique_entities(abstracts):
+    entities = []
+    for i, abstract in enumerate(abstracts):
+        if i % 10 == 0:
+            print('{} %'.format(round(i / len(abstracts) * 100, 3)))
+        doc = Document(abstract)
+        for j in range(len(doc.records)):
+            try:
+                entities.append(doc.records[j].serialize()['names'][0])
+            except:
+                pass
+    unique_entities = list(set(entities))
+    return unique_entities
+
+def build_pubchem_synonym_dict(abstracts):
+    entity_to_cid = {}
+    cid_to_synonyms = {}
+    for i, abstract in enumerate(abstracts):
+        if i % 100 == 0:
+            print('{} %'.format(round(i / len(abstracts) * 100, 2)))
+        # Gather All Named Entities
+        entities = []
+        doc = Document(abstract)
+        for j in range(len(doc.records)):
+            try:
+                entities.append(doc.records[j].serialize()['names'][0])
+            except:
+                pass
+
+        # Gather Synonyms for Each CID
+        for entity in entities:
+            if entity.lower() in entity_to_cid.keys():
+                pass
+            else:
+                c = pcp.get_compounds(entity, 'name')
+                if len(c) >= 1:
+                    try:
+                        c = c[0]
+                        cid = str(c.cid)
+                        entity_to_cid[entity.lower()] = cid
+                        if cid not in cid_to_synonyms.keys():
+                            cid_to_synonyms[cid] = [entity]
+                        else:
+                            cid_to_synonyms[cid].append(entity)
+                    except TimeoutError:
+                        pass
+
+    # Build Lookup Table for Each Named Entity With Synonyms
+    lookup_dict = {}
+    for entity, cid in entity_to_cid.items():
+        lookup_dict[entity] = cid_to_synonyms[cid][0]
+
+    return lookup_dict, entity_to_cid, cid_to_synonyms
+
+def normalize_synonyms(abstract, lookup_dict):
+    doc = Document(abstract)
+    cems = doc.cems
+    names = []
+    starts = []
+    ends = []
+    for cem in cems:
+        if cem.text.lower() in lookup_dict.keys():
+            names.append(cem.text.lower())
+            starts.append(cem.start)
+            ends.append(cem.end)
+    names = np.array(names)
+    starts = np.array(starts)
+    ends = np.array(ends)
+    sort = np.argsort(starts)
+    names = names[sort]
+    starts = starts[sort]
+    ends = ends[sort]
+
+    index_change = 0
+    for name, start, end in zip(names, starts, ends):
+        replace_name = lookup_dict[name]
         replace_delta = len(replace_name) - len(name)
         abstract = abstract[:start+index_change] + replace_name + abstract[end+index_change:]
         index_change += replace_delta
