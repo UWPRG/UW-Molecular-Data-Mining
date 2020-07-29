@@ -347,6 +347,53 @@ def normalize_elements(abstract):
         index_change += replace_delta
     return abstract
 
+def remove_copywrite_CI(abstract):
+    """
+    This function takes an abstract and removes the copywrite information followed by the Elsevier
+    text and publication year and returns a clean abstract.
+
+    Parameters:
+    abstract (str, required): The abstract which you want to clean
+    """
+    split= abstract.split()
+    clean_abstracts = []
+
+    if '©' in split:
+
+        if split[0] != '©':
+            index = split.index('©')
+            del split[index:]
+            clean_abstract = ' '.join(split)
+            clean_abstracts.append(clean_abstract)
+
+
+        elif split[0] == '©':
+            if 'B.V.' in split:
+
+                new_idx = split.index('B.V.')
+                del split[0:new_idx+1]
+                clean_abstract = ' '.join(split)
+                clean_abstracts.append(clean_abstract)
+
+            elif 'B.V..' in split:
+                new_idxs = split.index('B.V..')
+                del split[0:new_idxs+1]
+                clean_abstract = ' '.join(split)
+                clean_abstracts.append(clean_abstract)
+
+            else:
+    #             print(split)
+                del split[0:2]
+                clean_abstract = ' '.join(split)
+                clean_abstracts.append(clean_abstracts)
+
+
+    else:
+        clean_abstract = ' '.join(split)
+        clean_abstracts.append(clean_abstract)
+
+    return clean_abstracts
+    
 def find_all_unique_entities(abstracts):
     entities = []
     for i, abstract in enumerate(abstracts):
